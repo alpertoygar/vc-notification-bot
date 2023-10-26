@@ -1,4 +1,4 @@
-from discord import Intents, Client, Interaction, app_commands, Object, Member, VoiceState
+from discord import Intents, Client, Interaction, app_commands, Object, Member, VoiceState, Permissions
 
 from BotConfig import BotConfig
 from util import list_to_string
@@ -39,8 +39,29 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
         case (before_channel, after_channel):
             message = f'{member.display_name} switched from {before_channel.name} to {after_channel.name}'
 
+    present_members_in_channels = []
+
+    if after.channel:
+        present_members_in_channels.extend(list(map(lambda member: member.mention, after.channel.members)))
+    if before.channel:
+        present_members_in_channels.extend(list(map(lambda member: member.mention, before.channel.members)))
+
+    final_mention_list = list(filter(lambda mention: mention not in present_members_in_channels, config.get_mentions()))
+
     for message_channel in config.get_message_channels():
-        await message_channel.send(f'{list_to_string(config.get_mentions())} {message}')
+        has_permission_to_view = True
+        members = list(filter(lambda member: not member.bot, message_channel.members))
+        for member in members:
+            print(member)
+            after_permissions: Permissions = after.channel.permissions_for(member)
+            print(after_permissions.view_channel)
+            before_permissions: Permissions = before.channel.permissions_for(member)
+            print(before_permissions.view_channel)
+            if not after_permissions.view_channel or not before_permissions.view_channel:
+                has_permission_to_view = False
+                break
+        if has_permission_to_view:
+            await message_channel.send(f'{list_to_string(final_mention_list)} {message}')
 
 
 @client.tree.command()
@@ -71,7 +92,7 @@ async def unmention_me(interaction: Interaction):
 @app_commands.describe(
     arg='arg'
 )
-async def list(interaction: Interaction, arg: str):
+async def list_words(interaction: Interaction, arg: str):
     await interaction.response.send_message(arg)
 
 client.run(config.get_bot_token())
