@@ -38,31 +38,41 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
             message = f'{member.display_name} left {before_channel.name}'
         case (before_channel, after_channel):
             message = f'{member.display_name} switched from {before_channel.name} to {after_channel.name}'
-    present_members_in_channels = [member.mention]
+
+    channels_members_list = []
     if after.channel:
-        after_channel_members_list = list(map(lambda member: member.mention, after.channel.members))
-        present_members_in_channels.extend(after_channel_members_list)
+        channels_members_list.extend(after.channel.members)
     if before.channel:
-        before_channel_members_list = list(map(lambda member: member.mention, before.channel.members))
-        present_members_in_channels.extend(before_channel_members_list)
-    final_mention_list = list(filter(lambda mention: mention not in present_members_in_channels, config.get_mentions()))
+        channels_members_list.extend(before.channel.members)
+
+    final_mention_list = __get_mention_list(member.mention, channels_members_list)
 
     for message_channel in config.get_message_channels():
-        has_permission_to_view = True
-        members = list(filter(lambda member: not member.bot, message_channel.members))
-        for member in members:
-            if after.channel:
-                after_permissions: Permissions = after.channel.permissions_for(member)
-                if not after_permissions.view_channel:
-                    has_permission_to_view = False
-                    break
-            if before.channel:
-                before_permissions: Permissions = before.channel.permissions_for(member)
-                if not before_permissions.view_channel:
-                    has_permission_to_view = False
-                    break
-        if has_permission_to_view:
+        if __members_have_permission_to_view_voice_channel(message_channel, after.channel, before.channel):
             await message_channel.send(f'{list_to_string(final_mention_list)} {message}')
+
+
+def __get_mention_list(member_mention, channel_members: list) -> list:
+    present_members_in_channels = [member_mention]
+    present_members_in_channels.extend(list(map(lambda member: member.mention, channel_members)))
+    return list(filter(lambda mention: mention not in present_members_in_channels, config.get_mentions()))
+
+
+def __members_have_permission_to_view_voice_channel(message_channel, after_channel, before_channel) -> bool:
+    has_permission_to_view = True
+    members = list(filter(lambda member: not member.bot, message_channel.members))
+    for member in members:
+        if after_channel:
+            after_permissions: Permissions = after_channel.permissions_for(member)
+            if not after_permissions.view_channel:
+                has_permission_to_view = False
+                break
+        if before_channel:
+            before_permissions: Permissions = before_channel.permissions_for(member)
+            if not before_permissions.view_channel:
+                has_permission_to_view = False
+                break
+    return has_permission_to_view
 
 
 @client.tree.command()
