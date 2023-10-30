@@ -89,27 +89,27 @@ def __members_have_permission_to_view_voice_channel(message_channel, after_chann
 @client.tree.command()
 async def subscribe(interaction: Interaction):
     config.add_message_channel(interaction.channel.id)
-    await interaction.response().send_message(f'Subscribed to channel {interaction.channel}')
+    await interaction.response.send_message(f'Subscribed to channel {interaction.channel}')
 
 
 # Unsubscribe the text channel for messages from the bot
 @client.tree.command()
 async def unsubscribe(interaction: Interaction):
     config.remove_message_channel(interaction.channel.id)
-    await interaction.response().send_message(f'Unsubscribed to channel {interaction.channel}')
+    await interaction.response.send_message(f'Unsubscribed to channel {interaction.channel}')
 
 
 # Set a user to be mentioned in the messages
 @client.tree.command()
 async def mention_me(interaction: Interaction):
     config.add_mention(interaction.user.mention)
-    await interaction.response().send_message(f'{interaction.user.mention} is going to be mentioned from now on.')
+    await interaction.response.send_message(f'{interaction.user.mention} is going to be mentioned from now on.')
 
 
 # Set a user to not be mentioned in the messages
 @client.tree.command()
 async def unmention_me(interaction: Interaction):
     config.remove_mention(interaction.user.mention)
-    await interaction.response().send_message(f'{interaction.user.mention} is not going to be mentioned from now on.')
+    await interaction.response.send_message(f'{interaction.user.mention} is not going to be mentioned from now on.')
 
 client.run(config.get_bot_token())
