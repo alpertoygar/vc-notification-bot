@@ -51,8 +51,8 @@ class BotConfig:
     def get_bot_token(self):
         return self.__bot_token
 
-    def set_authorized_channel_set(self, channel_list: list):
-        self.__authorized_channel_set = set(channel_list)
+    def set_authorized_channel_set(self, channel_list: set):
+        self.__authorized_channel_set = channel_list
 
     def add_mention(self, mention):
         if mention not in self.__mentions:
