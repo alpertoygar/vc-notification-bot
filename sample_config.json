@@ -1,5 +1,5 @@
 {
-    "mentions": [],
+    "channels_with_mentions": {},
     "message_channels": [],
     "bot_token": "<YOUR BOT TOKEN HERE>",
     "guild_id": "<YOUR GUILD ID HERE (THIS IS AN INTEGER REMOVE QUOTES)>"
