@@ -1,3 +1,13 @@
+# vc-notification-bot
+
+## Setup
+
+### Discord Developer Portal
+- These intents should be enabled from "Settings -> Bot -> Privileged Gateway Intents":
+  - Presence intent
+  - Server members intent
+  - Message content intent
+
 ## Usage
 1. Fill the sample config with your bot token and guild id (guild id is an integer remove the quotes)
 2. Rename it to config.json
