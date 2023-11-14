@@ -2,7 +2,7 @@ import json, os
 class BotConfig:
     def __init__(self):
         self.__message_channels: set = set()
-        self.__mentions: set = set()
+        self.__channels_with_mentions: dict[int, list[str]] = dict()
         self.__bot_token: str
         self.__guild_id: int
         self.__config_path = os.path.join(os.getcwd(), "config.json")
@@ -13,8 +13,8 @@ class BotConfig:
         try:
             with open(self.__config_path, 'r+') as config_file:
                 config_data = json.load(config_file)
-                if 'mentions' in config_data:
-                    self.__mentions = set(config_data['mentions'])  # Update mentions
+                if 'channels_with_mentions' in config_data:
+                    self.__channels_with_mentions = { int(channel_id): mentions for channel_id, mentions in dict(config_data['channels_with_mentions']).items() } # Update channels with mentions
                 if 'message_channels' in config_data:
                     self.__message_channels = set(config_data['message_channels'])  # Update message channels
                 if 'bot_token' in config_data:
@@ -32,7 +32,7 @@ class BotConfig:
 
     def __save_config(self):
         config_data = {
-            'mentions': list(self.__mentions),
+            'channels_with_mentions': self.__channels_with_mentions,
             'message_channels': list(self.__message_channels),
             'bot_token': self.__bot_token,
             'guild_id': self.__guild_id
@@ -54,18 +54,49 @@ class BotConfig:
     def set_authorized_channel_set(self, channel_list: set):
         self.__authorized_channel_set = channel_list
 
-    def add_mention(self, mention):
-        if mention not in self.__mentions:
-            self.__mentions.add(mention)
+    def add_mention_to_channel(self, mention: str, channel_id: int):
+        # no mention is added for channel yet
+        if channel_id not in self.__channels_with_mentions:
+            self.__channels_with_mentions[channel_id] = [mention]
             self.__save_config()
+            return True
 
-    def get_mentions(self):
-        return self.__mentions
-
-    def remove_mention(self, mention):
-        if mention in self.__mentions:
-            self.__mentions.remove(mention)
+        # mention is not added for channel yet
+        if mention not in self.__channels_with_mentions[channel_id]:
+            self.__channels_with_mentions[channel_id].append(mention)
             self.__save_config()
+            return True
+
+        # mention is already added for channel
+        return False
+
+    def remove_mention_from_channel(self, mention: str, channel_id: int):
+        # no mention is added for channel yet
+        if channel_id not in self.__channels_with_mentions:
+            self.__save_config()
+            return False
+
+        # mention is not added for channel yet
+        if mention not in self.__channels_with_mentions[channel_id]:
+            self.__channels_with_mentions[channel_id].append(mention)
+            self.__save_config()
+            return False
+
+        # mention is already added for channel
+        self.__channels_with_mentions[channel_id].remove(mention)
+
+        # remove channel entry from dictionary if mention list is empty
+        if len(self.__channels_with_mentions[channel_id]) == 0:
+            del self.__channels_with_mentions[channel_id]
+
+        self.__save_config()
+        return True
+
+    def get_mentions(self, channel_id: int):
+        if channel_id in self.__channels_with_mentions:
+            return self.__channels_with_mentions[channel_id]
+
+        return []
 
     def add_message_channel(self, channel_id: int):
         if channel_id not in self.__message_channels:

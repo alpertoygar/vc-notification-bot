@@ -50,21 +50,21 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
     if before.channel:
         channels_members_list.extend(before.channel.members)
 
-    # Gets the final list of mentions to add to the message
-    final_mention_list = __get_mention_list(member.mention, channels_members_list)
-
     # For each message channel that has subscribed to the bot sends the message
     for message_channel in config.get_message_channels():
+        # Gets the final list of mentions to add to the message
+        final_mention_list = __get_mention_list(member.mention, channels_members_list, message_channel.id)
+
         # Checks if all the members in the text channel has permission to see the Voice channels that are in the message
         if __members_have_permission_to_view_voice_channel(message_channel, after.channel, before.channel):
             await message_channel.send(f'{list_to_string(final_mention_list)} {message}')
 
 
 # Filters the mention list so that if anyone is already in a channel related to the event they are not mentioned
-def __get_mention_list(member_mention, channel_members: list) -> list:
+def __get_mention_list(member_mention, channel_members: list, channel_id: int) -> list:
     present_members_in_channels = [member_mention]
     present_members_in_channels.extend(list(map(lambda member: member.mention, channel_members)))
-    return list(filter(lambda mention: mention not in present_members_in_channels, config.get_mentions()))
+    return list(filter(lambda mention: mention not in present_members_in_channels, config.get_mentions(channel_id)))
 
 
 # Checks whether all the members of the text channel has permission to see the Voice channels that are in the message
@@ -102,14 +102,26 @@ async def unsubscribe(interaction: Interaction):
 # Set a user to be mentioned in the messages
 @client.tree.command()
 async def mention_me(interaction: Interaction):
-    config.add_mention(interaction.user.mention)
-    await interaction.response.send_message(f'{interaction.user.mention} is going to be mentioned from now on.')
+    channel_id = interaction.channel_id
+    mention = interaction.user.mention
+
+    is_added = config.add_mention_to_channel(mention, channel_id)
+    if is_added:
+        await interaction.response.send_message(f'{interaction.user.mention} is going to be mentioned from now on.')
+    else:
+        await interaction.response.send_message(f'{interaction.user.mention} is already added.')
 
 
 # Set a user to not be mentioned in the messages
 @client.tree.command()
 async def unmention_me(interaction: Interaction):
-    config.remove_mention(interaction.user.mention)
-    await interaction.response.send_message(f'{interaction.user.mention} is not going to be mentioned from now on.')
+    channel_id = interaction.channel_id
+    mention = interaction.user.mention
+
+    is_removed = config.remove_mention_from_channel(mention, channel_id)
+    if is_removed:
+        await interaction.response.send_message(f'{interaction.user.mention} is not going to be mentioned from now on.')
+    else:
+        await interaction.response.send_message(f'{interaction.user.mention} is not found in the mention list for the channel.')
 
 client.run(config.get_bot_token())
