@@ -107,6 +107,9 @@ class BotConfig:
         test = list(filter(lambda channel: channel.id in self.__message_channels, list(self.__authorized_channel_set)))
         return test
 
+    def has_message_channel(self, channel_id) -> bool:
+        return channel_id in self.__message_channels
+
     def remove_message_channel(self, channel_id):
         if channel_id in self.__message_channels:
             self.__message_channels.remove(channel_id)

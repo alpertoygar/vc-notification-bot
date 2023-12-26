@@ -1,7 +1,7 @@
 from discord import Intents, Client, Interaction, app_commands, Object, Member, VoiceState, Permissions
 
 from BotConfig import BotConfig
-from util import list_to_string
+from util import list_to_string, is_str_with_twitter_url, replace_twitter_urls_in_str
 
 config = BotConfig()
 
@@ -24,6 +24,15 @@ async def on_ready():
     await client.tree.sync(guild=my_guild)
     print('Commands synced')
 
+@client.event
+async def on_message(message):
+    # Process the message if it is sent from a tracked channel
+    if config.has_message_channel(message.channel.id):
+        # Reply with updated content if the message has twitter url in it
+        if is_str_with_twitter_url(message.content):
+            print(f'Replacing twitter urls in message {message.id}')
+            updated_message_content = replace_twitter_urls_in_str(message.content)
+            await message.channel.send(updated_message_content, reference=message)
 
 @client.event
 async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
