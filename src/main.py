@@ -24,15 +24,17 @@ async def on_ready():
     await client.tree.sync(guild=my_guild)
     print('Commands synced')
 
+
 @client.event
-async def on_message(message):
+async def convert_x_message_for_embed(message):
     # Process the message if it is sent from a tracked channel
-    if config.has_message_channel(message.channel.id):
+    if config.has_x_message_channel(message.channel.id):
         # Reply with updated content if the message has twitter url in it
         if is_str_with_twitter_url(message.content):
             print(f'Replacing twitter urls in message {message.id}')
             updated_message_content = replace_twitter_urls_in_str(message.content)
             await message.channel.send(updated_message_content, reference=message)
+
 
 @client.event
 async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
@@ -132,5 +134,13 @@ async def unmention_me(interaction: Interaction):
         await interaction.response.send_message(f'{interaction.user.mention} is not going to be mentioned from now on.')
     else:
         await interaction.response.send_message(f'{interaction.user.mention} is not found in the mention list for the channel.')
+
+
+# Subscribe the text channel for messages from the bot
+@client.tree.command()
+async def convert_x_messages(interaction: Interaction):
+    config.add_x_message_channel(interaction.channel.id)
+    await interaction.response.send_message(f'Listening x messages in {interaction.channel}')
+
 
 client.run(config.get_bot_token())
