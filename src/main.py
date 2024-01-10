@@ -26,7 +26,7 @@ async def on_ready():
 
 
 @client.event
-async def convert_x_message_for_embed(message):
+async def on_message(message):
     # Process the message if it is sent from a tracked channel
     if config.has_x_message_channel(message.channel.id):
         # Reply with updated content if the message has twitter url in it
