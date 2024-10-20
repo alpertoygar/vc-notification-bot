@@ -3,7 +3,7 @@ from datetime import datetime
 from discord import Intents, Client, Interaction, app_commands, Object, Member, VoiceState, Permissions
 
 from BotConfig import BotConfig
-from src.gpt import GPTClient
+from gpt import GPTClient
 from util import list_to_string, is_str_with_twitter_url, replace_twitter_urls_in_str
 
 config = BotConfig()
