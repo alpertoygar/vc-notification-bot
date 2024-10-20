@@ -183,7 +183,7 @@ async def gpt(interaction: Interaction, query: str, code=False):
     await interaction.response.defer()
     response = gpt_client.ask_question(query, history=history)
     length += len(response)
-    await interaction.followup.send(f'Alper GPT: {response}')
+    await interaction.followup.send(f'Query:{query}\n\nAlper GPT: {response}')
     gpt_client.clean_queries()
     gpt_client.queries[datetime.now()] = length
 
