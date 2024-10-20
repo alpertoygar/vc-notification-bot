@@ -29,7 +29,7 @@ async def on_ready():
 async def on_message(message):
     # Process the message if it is sent from a tracked channel
     if config.has_x_message_channel(message.channel.id):
-        # Reply with updated content if the message has twitter url in it
+        # Reply with updated content if the message has the twitter url in it
         if is_str_with_twitter_url(message.content):
             print(f'Replacing twitter urls in message {message.id}')
             updated_message_content = replace_twitter_urls_in_str(message.content)
@@ -51,7 +51,7 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
         case (before_channel, after_channel):
             message = f'{member.display_name} switched from {before_channel.name} to {after_channel.name}'
         case _:
-            print(f'Member:{member} Before:{before} After:{after}')
+            print(f'Member: {member} Before: {before} After: {after}')
             return
 
     # Creates a union of members in both the before and after channel
