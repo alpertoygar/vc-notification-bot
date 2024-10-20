@@ -6,6 +6,9 @@ class BotConfig:
         self.__channels_with_mentions: dict[int, list[str]] = dict()
         self.__bot_token: str
         self.__guild_id: int
+        self.__gpt_channel_id: int
+        self.__gpt_query_char_limit: int
+        self.__gpt_total_char_limit: int
         self.__config_path = os.path.join(os.getcwd(), "config.json")
         self.__load_config()
         self.__authorized_channel_set: set = set()
@@ -28,6 +31,12 @@ class BotConfig:
                     self.__guild_id = config_data['guild_id']
                 else:
                     raise ValueError("You must have guild id in your config")
+                if 'gpt_channel_id' in config_data:
+                    self.__gpt_channel_id = config_data['gpt_channel_id']
+                if 'gpt_query_char_limit' in config_data:
+                    self.__gpt_query_char_limit = config_data['gpt_query_char_limit']
+                if 'gpt_total_char_limit' in config_data:
+                    self.__gpt_total_char_limit = config_data['gpt_total_char_limit']
         except FileNotFoundError:
             print(f"Config file not found at {self.__config_path}")
         except json.JSONDecodeError:
@@ -54,6 +63,15 @@ class BotConfig:
 
     def get_bot_token(self):
         return self.__bot_token
+
+    def get_gpt_channel_id(self):
+        return self.__gpt_channel_id
+
+    def get_gpt_query_char_limit(self):
+        return self.__gpt_query_char_limit
+
+    def get_gpt_total_char_limit(self):
+        return self.__gpt_total_char_limit
 
     def set_authorized_channel_set(self, channel_list: set):
         self.__authorized_channel_set = channel_list

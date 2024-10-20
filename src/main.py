@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from discord import Intents, Client, Interaction, app_commands, Object, Member, VoiceState, Permissions
 
 from BotConfig import BotConfig
+from src.gpt import GPTClient
 from util import list_to_string, is_str_with_twitter_url, replace_twitter_urls_in_str
 
 config = BotConfig()
@@ -12,6 +15,7 @@ intents.voice_states = True
 client: Client = Client(intents=intents)
 client.tree = app_commands.CommandTree(client)
 
+gpt_client = GPTClient()
 
 @client.event
 async def on_ready():
@@ -29,7 +33,7 @@ async def on_ready():
 async def on_message(message):
     # Process the message if it is sent from a tracked channel
     if config.has_x_message_channel(message.channel.id):
-        # Reply with updated content if the message has twitter url in it
+        # Reply with updated content if the message has the twitter url in it
         if is_str_with_twitter_url(message.content):
             print(f'Replacing twitter urls in message {message.id}')
             updated_message_content = replace_twitter_urls_in_str(message.content)
@@ -51,7 +55,7 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
         case (before_channel, after_channel):
             message = f'{member.display_name} switched from {before_channel.name} to {after_channel.name}'
         case _:
-            print(f'Member:{member} Before:{before} After:{after}')
+            print(f'Member: {member} Before: {before} After: {after}')
             return
 
     # Creates a union of members in both the before and after channel
@@ -141,6 +145,47 @@ async def unmention_me(interaction: Interaction):
 async def convert_x_messages(interaction: Interaction):
     config.add_x_message_channel(interaction.channel.id)
     await interaction.response.send_message(f'Listening x messages in {interaction.channel}')
+
+
+# Ask a question to GPT
+@client.tree.command(description="Ask a question to Chat GPT")
+async def ask_gpt(interaction: Interaction, query: str):
+    await gpt(interaction, query)
+
+
+@client.tree.command(description="Ask a question to Chat GPT to get a code snippet only")
+async def ask_gpt_code(interaction: Interaction, query: str):
+    await gpt(interaction, query, True)
+
+
+async def gpt(interaction: Interaction, query: str, code=False):
+    if interaction.channel_id != config.get_gpt_channel_id():
+        await interaction.response.send_message("Not available in this channel")
+        return
+    if len(query) > config.get_gpt_query_char_limit():
+        await interaction.response.send_message(f"Query cant be longer than 200 characters. Your is {len(query)}")
+        return
+    if gpt_client.total_queries_length() > config.get_gpt_total_char_limit():
+        await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
+        return
+    history = [{
+        "role": "system",
+        "content": "All answers must be shorter than 2000 characters."
+    }]
+
+    if code:
+        history.append({
+            "role": "system",
+            "content": "Only respond to questions with code snippets and nothing else."
+        })
+
+    length = len(history[0]["content"])
+    await interaction.response.defer()
+    response = gpt_client.ask_question(query, history=history)
+    length += len(response)
+    await interaction.followup.send(f'Alper GPT: {response}')
+    gpt_client.clean_queries()
+    gpt_client.queries[datetime.now()] = length
 
 
 client.run(config.get_bot_token())

@@ -3,5 +3,8 @@
     "message_channels": [],
     "x_message_channels": [],
     "bot_token": "<YOUR BOT TOKEN HERE>",
-    "guild_id": "<YOUR GUILD ID HERE (THIS IS AN INTEGER REMOVE QUOTES)>"
+    "guild_id": "<(THIS IS AN INTEGER REMOVE QUOTES) YOUR GUILD ID HERE>",
+    "gpt_channel_id": "<(THIS IS AN INTEGER REMOVE QUOTES) CHANNEL ID FOR THE GPT TO ANSWER IN>",
+    "gpt_query_char_limit": "<(THIS IS AN INTEGER REMOVE QUOTES) GPT QUERY MAX CHAR LIMIT>",
+    "gpt_total_char_limit": "<(THIS IS AN INTEGER REMOVE QUOTES) GPT TOTAL QUERY AND RESPONSE CHAR LIMIT FOR AN HOUR>"
 }
