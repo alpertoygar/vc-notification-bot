@@ -1,5 +1,9 @@
 # vc-notification-bot
 
+## Requirements
+
+Python 3.10
+
 ## Setup
 
 ### Discord Developer Portal
