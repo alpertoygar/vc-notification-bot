@@ -198,7 +198,11 @@ async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, siz
     try:
         minutes = calculate_download_duration(speed_in_mbit, size_in_gb)
         await interaction.response.send_message(f'It would take {minutes} minutes')
-    except Exception:
+    except ZeroDivisionError:
+        await interaction.response.send_message(f'Your internet is down (speed cannot be zero)')
+    except ValueError:
+        await interaction.response.send_message(f'Speed and size should be numeric values')
+    except:
         await interaction.response.send_message(f'Unknown error')
 
 client.run(config.get_bot_token())
