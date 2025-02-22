@@ -1,6 +1,15 @@
 from datetime import datetime
 
-from discord import Intents, Client, Interaction, app_commands, Object, Member, VoiceState, Permissions
+from discord import (
+    Intents,
+    Client,
+    Interaction,
+    app_commands,
+    Object,
+    Member,
+    VoiceState,
+    Permissions,
+)
 
 from BotConfig import BotConfig
 from gpt import GPTClient
@@ -22,16 +31,17 @@ client.tree = app_commands.CommandTree(client)
 
 gpt_client = GPTClient()
 
+
 @client.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
+    print(f"We have logged in as {client.user}")
     # Saves the list of al the channels that the bot has permission to see
     config.set_authorized_channel_set(set(client.get_all_channels()))
-    print(f'Message channels are {[x.name for x in config.get_message_channels()]}')
+    print(f"Message channels are {[x.name for x in config.get_message_channels()]}")
     my_guild = Object(config.get_guild_id())
     client.tree.copy_global_to(guild=my_guild)
     await client.tree.sync(guild=my_guild)
-    print('Commands synced')
+    print("Commands synced")
 
 
 @client.event
@@ -40,7 +50,7 @@ async def on_message(message):
     if config.has_x_message_channel(message.channel.id):
         # Reply with updated content if the message has the twitter url in it
         if is_str_with_twitter_url(message.content):
-            print(f'Replacing twitter urls in message {message.id}')
+            print(f"Replacing twitter urls in message {message.id}")
             updated_message_content = replace_twitter_urls_in_str(message.content)
             await message.channel.send(updated_message_content, reference=message)
 
@@ -54,13 +64,13 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
     # Sets message for the voice change activity
     match (before.channel, after.channel):
         case (None, after_channel):
-            message = f'{member.display_name} entered {after_channel.name}'
+            message = f"{member.display_name} entered {after_channel.name}"
         case (before_channel, None):
-            message = f'{member.display_name} left {before_channel.name}'
+            message = f"{member.display_name} left {before_channel.name}"
         case (before_channel, after_channel):
-            message = f'{member.display_name} switched from {before_channel.name} to {after_channel.name}'
+            message = f"{member.display_name} switched from {before_channel.name} to {after_channel.name}"
         case _:
-            print(f'Member: {member} Before: {before} After: {after}')
+            print(f"Member: {member} Before: {before} After: {after}")
             return
 
     # Creates a union of members in both the before and after channel
@@ -77,14 +87,19 @@ async def on_voice_state_update(member: Member, before: VoiceState, after: Voice
 
         # Checks if all the members in the text channel has permission to see the Voice channels that are in the message
         if __members_have_permission_to_view_voice_channel(message_channel, after.channel, before.channel):
-            await message_channel.send(f'{list_to_string(final_mention_list)} {message}')
+            await message_channel.send(f"{list_to_string(final_mention_list)} {message}")
 
 
 # Filters the mention list so that if anyone is already in a channel related to the event they are not mentioned
 def __get_mention_list(member_mention, channel_members: list, channel_id: int) -> list:
     present_members_in_channels = [member_mention]
     present_members_in_channels.extend(list(map(lambda member: member.mention, channel_members)))
-    return list(filter(lambda mention: mention not in present_members_in_channels, config.get_mentions(channel_id)))
+    return list(
+        filter(
+            lambda mention: mention not in present_members_in_channels,
+            config.get_mentions(channel_id),
+        )
+    )
 
 
 # Checks whether all the members of the text channel has permission to see the Voice channels that are in the message
@@ -109,14 +124,14 @@ def __members_have_permission_to_view_voice_channel(message_channel, after_chann
 @client.tree.command()
 async def subscribe(interaction: Interaction):
     config.add_message_channel(interaction.channel.id)
-    await interaction.response.send_message(f'Subscribed to channel {interaction.channel}')
+    await interaction.response.send_message(f"Subscribed to channel {interaction.channel}")
 
 
 # Unsubscribe the text channel for messages from the bot
 @client.tree.command()
 async def unsubscribe(interaction: Interaction):
     config.remove_message_channel(interaction.channel.id)
-    await interaction.response.send_message(f'Unsubscribed to channel {interaction.channel}')
+    await interaction.response.send_message(f"Unsubscribed to channel {interaction.channel}")
 
 
 # Set a user to be mentioned in the messages
@@ -127,9 +142,9 @@ async def mention_me(interaction: Interaction):
 
     is_added = config.add_mention_to_channel(mention, channel_id)
     if is_added:
-        await interaction.response.send_message(f'{interaction.user.mention} is going to be mentioned from now on.')
+        await interaction.response.send_message(f"{interaction.user.mention} is going to be mentioned from now on.")
     else:
-        await interaction.response.send_message(f'{interaction.user.mention} is already added.')
+        await interaction.response.send_message(f"{interaction.user.mention} is already added.")
 
 
 # Set a user to not be mentioned in the messages
@@ -140,16 +155,18 @@ async def unmention_me(interaction: Interaction):
 
     is_removed = config.remove_mention_from_channel(mention, channel_id)
     if is_removed:
-        await interaction.response.send_message(f'{interaction.user.mention} is not going to be mentioned from now on.')
+        await interaction.response.send_message(f"{interaction.user.mention} is not going to be mentioned from now on.")
     else:
-        await interaction.response.send_message(f'{interaction.user.mention} is not found in the mention list for the channel.')
+        await interaction.response.send_message(
+            f"{interaction.user.mention} is not found in the mention list for the channel."
+        )
 
 
 # Subscribe the text channel for messages from the bot
 @client.tree.command()
 async def convert_x_messages(interaction: Interaction):
     config.add_x_message_channel(interaction.channel.id)
-    await interaction.response.send_message(f'Listening x messages in {interaction.channel}')
+    await interaction.response.send_message(f"Listening x messages in {interaction.channel}")
 
 
 # Ask a question to GPT
@@ -173,36 +190,42 @@ async def gpt(interaction: Interaction, query: str, code=False):
     if gpt_client.total_queries_length() > config.get_gpt_total_char_limit():
         await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
         return
-    history = [{
-        "role": "system",
-        "content": "All answers must be shorter than 2000 characters."
-    }]
+    history = [
+        {
+            "role": "system",
+            "content": "All answers must be shorter than 2000 characters.",
+        }
+    ]
 
     if code:
-        history.append({
-            "role": "system",
-            "content": "Only respond to questions with code snippets and nothing else."
-        })
+        history.append(
+            {
+                "role": "system",
+                "content": "Only respond to questions with code snippets and nothing else.",
+            }
+        )
 
     length = len(history[0]["content"])
     await interaction.response.defer()
     response = gpt_client.ask_question(query, history=history)
     length += len(response)
-    await interaction.followup.send(f'Query:{query}\n\nAlper GPT: {response}')
+    await interaction.followup.send(f"Query:{query}\n\nAlper GPT: {response}")
     gpt_client.clean_queries()
     gpt_client.queries[datetime.now()] = length
+
 
 # Ask a question to GPT
 @client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
         minutes = calculate_download_duration(speed_in_mbit, size_in_gb)
-        await interaction.response.send_message(f'It would take {minutes} minutes')
+        await interaction.response.send_message(f"It would take {minutes} minutes")
     except ZeroDivisionError:
-        await interaction.response.send_message(f'Your internet is down (speed cannot be zero)')
+        await interaction.response.send_message("Your internet is down (speed cannot be zero)")
     except ValueError:
-        await interaction.response.send_message(f'Speed and size should be numeric values')
-    except:
-        await interaction.response.send_message(f'Unknown error')
+        await interaction.response.send_message("Speed and size should be numeric values")
+    except Exception:
+        await interaction.response.send_message("Unknown error")
+
 
 client.run(config.get_bot_token())
