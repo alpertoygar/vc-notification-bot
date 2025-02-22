@@ -23,3 +23,10 @@ def replace_twitter_url_in_match_object(match_object) -> str:
 def replace_twitter_urls_in_str(str: str) -> str:
     return sub(TWITTER_POST_URL_REGEX, replace_twitter_url_in_match_object, str)
 
+
+def calculate_download_duration(speed_in_mbit: str, size_in_gb: str) -> str:
+    speed = float(speed_in_mbit) / 8
+    size = float(size_in_gb) * 1024
+    seconds = size / speed
+    minutes = "{0:.3g}".format(seconds / 60)
+    return minutes
