@@ -23,17 +23,12 @@ class GPTClient:
                     "content": [
                         {
                             "type": "text",
-                            "text": "Tell me which city, country and year do you think this image taken? And what is your reasoning"
+                            "text": "Tell me which city, country and year do you think this image taken? And what is your reasoning",
                         },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": url
-                            }
-                        }
-                    ]
+                        {"type": "image_url", "image_url": {"url": url}},
+                    ],
                 }
-            ]
+            ],
         )
         return query.choices[0].message.content
 
@@ -41,17 +36,9 @@ class GPTClient:
         if not history:
             history = []
 
-        history.extend([
-            {
-                "role": "user",
-                "content": content
-            }
-        ])
+        history.extend([{"role": "user", "content": content}])
 
-        query = self.client.chat.completions.create(
-            model=model,
-            messages=history
-        )
+        query = self.client.chat.completions.create(model=model, messages=history)
 
         return query.choices[0].message.content
 

@@ -1,5 +1,7 @@
 import json
 import os
+
+
 class BotConfig:
     def __init__(self):
         self.__message_channels: set = set()
@@ -16,28 +18,31 @@ class BotConfig:
 
     def __load_config(self):
         try:
-            with open(self.__config_path, 'r+') as config_file:
+            with open(self.__config_path, "r+") as config_file:
                 config_data = json.load(config_file)
-                if 'channels_with_mentions' in config_data:
-                    self.__channels_with_mentions = { int(channel_id): mentions for channel_id, mentions in dict(config_data['channels_with_mentions']).items() } # Update channels with mentions
-                if 'message_channels' in config_data:
-                    self.__message_channels = set(config_data['message_channels'])  # Update message channels
-                if 'x_message_channels' in config_data:
-                    self.__x_message_channels = set(config_data['x_message_channels'])  # Update message channels
-                if 'bot_token' in config_data:
-                    self.__bot_token = config_data['bot_token']
+                if "channels_with_mentions" in config_data:
+                    self.__channels_with_mentions = {
+                        int(channel_id): mentions
+                        for channel_id, mentions in dict(config_data["channels_with_mentions"]).items()
+                    }  # Update channels with mentions
+                if "message_channels" in config_data:
+                    self.__message_channels = set(config_data["message_channels"])  # Update message channels
+                if "x_message_channels" in config_data:
+                    self.__x_message_channels = set(config_data["x_message_channels"])  # Update message channels
+                if "bot_token" in config_data:
+                    self.__bot_token = config_data["bot_token"]
                 else:
                     raise ValueError("You must have bot token in your config")
-                if 'guild_id' in config_data:
-                    self.__guild_id = config_data['guild_id']
+                if "guild_id" in config_data:
+                    self.__guild_id = config_data["guild_id"]
                 else:
                     raise ValueError("You must have guild id in your config")
-                if 'gpt_channel_id' in config_data:
-                    self.__gpt_channel_id = config_data['gpt_channel_id']
-                if 'gpt_query_char_limit' in config_data:
-                    self.__gpt_query_char_limit = config_data['gpt_query_char_limit']
-                if 'gpt_total_char_limit' in config_data:
-                    self.__gpt_total_char_limit = config_data['gpt_total_char_limit']
+                if "gpt_channel_id" in config_data:
+                    self.__gpt_channel_id = config_data["gpt_channel_id"]
+                if "gpt_query_char_limit" in config_data:
+                    self.__gpt_query_char_limit = config_data["gpt_query_char_limit"]
+                if "gpt_total_char_limit" in config_data:
+                    self.__gpt_total_char_limit = config_data["gpt_total_char_limit"]
         except FileNotFoundError:
             print(f"Config file not found at {self.__config_path}")
         except json.JSONDecodeError:
@@ -45,15 +50,15 @@ class BotConfig:
 
     def __save_config(self):
         config_data = {
-            'channels_with_mentions': self.__channels_with_mentions,
-            'message_channels': list(self.__message_channels),
-            'x_message_channels': list(self.__x_message_channels),
-            'bot_token': self.__bot_token,
-            'guild_id': self.__guild_id
+            "channels_with_mentions": self.__channels_with_mentions,
+            "message_channels": list(self.__message_channels),
+            "x_message_channels": list(self.__x_message_channels),
+            "bot_token": self.__bot_token,
+            "guild_id": self.__guild_id,
         }
 
         try:
-            with open(self.__config_path, 'w+') as config_file:
+            with open(self.__config_path, "w+") as config_file:
                 json.dump(config_data, config_file, indent=4)
             print(f"Config saved to {self.__config_path}")
         except Exception as e:
@@ -127,7 +132,12 @@ class BotConfig:
             self.__save_config()
 
     def get_message_channels(self):
-        test = list(filter(lambda channel: channel.id in self.__message_channels, list(self.__authorized_channel_set)))
+        test = list(
+            filter(
+                lambda channel: channel.id in self.__message_channels,
+                list(self.__authorized_channel_set),
+            )
+        )
         return test
 
     def add_x_message_channel(self, channel_id: int):

@@ -7,7 +7,7 @@ def list_to_string(input_list: list):
     if not input_list:
         return ""  # Return an empty string if the input list is empty
     else:
-        return ' '.join(map(str, input_list))
+        return " ".join(map(str, input_list))
 
 
 def is_str_with_twitter_url(str: str) -> bool:
@@ -17,7 +17,7 @@ def is_str_with_twitter_url(str: str) -> bool:
 def replace_twitter_url_in_match_object(match_object) -> str:
     match_groups = list(match_object.groups())
     match_groups[1] = "vxtwitter"
-    return ''.join(match_groups)
+    return "".join(match_groups)
 
 
 def replace_twitter_urls_in_str(str: str) -> str:
