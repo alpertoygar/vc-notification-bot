@@ -4,7 +4,12 @@ from discord import Intents, Client, Interaction, app_commands, Object, Member, 
 
 from BotConfig import BotConfig
 from gpt import GPTClient
-from util import list_to_string, is_str_with_twitter_url, replace_twitter_urls_in_str
+from util import (
+    calculate_download_duration,
+    list_to_string,
+    is_str_with_twitter_url,
+    replace_twitter_urls_in_str,
+)
 
 config = BotConfig()
 
@@ -191,10 +196,7 @@ async def gpt(interaction: Interaction, query: str, code=False):
 @client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
-        speed = float(speed_in_mbit) / 8
-        size = float(size_in_gb) * 1024
-        seconds = size / speed
-        minutes = '{0:.3g}'.format(seconds / 60)
+        minutes = calculate_download_duration(speed_in_mbit, size_in_gb)
         await interaction.response.send_message(f'It would take {minutes} minutes')
     except Exception:
         await interaction.response.send_message(f'Unknown error')
