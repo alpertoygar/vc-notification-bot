@@ -3,11 +3,11 @@ from re import search, sub
 TWITTER_POST_URL_REGEX = r"(https:\/\/)(twitter|x)(\.com)(\/[^\/ ]+)(\/[^\/ ]+)(\/[^\/ ]+)"
 
 
-def list_to_string(l: list):
-    if not l:
+def list_to_string(input_list: list):
+    if not input_list:
         return ""  # Return an empty string if the input list is empty
     else:
-        return ' '.join(map(str, l))
+        return ' '.join(map(str, input_list))
 
 
 def is_str_with_twitter_url(str: str) -> bool:
