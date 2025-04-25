@@ -185,7 +185,9 @@ async def gpt(interaction: Interaction, query: str, code=False):
         await interaction.response.send_message("Not available in this channel")
         return
     if len(query) > config.get_gpt_query_char_limit():
-        await interaction.response.send_message(f"Query cant be longer than 200 characters. Your is {len(query)}")
+        await interaction.response.send_message(
+            f"Query cannot be longer than {config.get_gpt_query_char_limit()} characters. Yours is {len(query)}"
+        )
         return
     if gpt_client.total_queries_length() > config.get_gpt_total_char_limit():
         await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
