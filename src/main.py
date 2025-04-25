@@ -214,7 +214,7 @@ async def gpt(interaction: Interaction, query: str, code=False):
     gpt_client.queries[datetime.now()] = length
 
 
-# Ask a question to GPT
+# Calculate the download duration with the given speed and size
 @client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
