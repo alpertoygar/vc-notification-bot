@@ -80,3 +80,7 @@ class GPTClient:
                 result[timestamp] = char_len
         self.queries = result
         print(self.queries)
+
+    def reset_context(self):
+        self.history = self.BASE_HISTORY.copy()
+        self.last_messaged_at = datetime.now()

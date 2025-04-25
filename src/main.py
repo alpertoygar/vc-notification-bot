@@ -210,6 +210,13 @@ async def gpt(interaction: Interaction, query: str, code=False):
 
 
 # Ask a question to GPT
+@client.tree.command(description="Reset the chat context for GPT commands")
+async def reset_gpt_context(interaction: Interaction):
+    gpt_client.reset_context()
+    await interaction.response.send_message("Context is reset!")
+
+
+# Ask a question to GPT
 @client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
