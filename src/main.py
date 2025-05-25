@@ -26,25 +26,26 @@ intents = Intents.default()
 intents.message_content = True
 intents.voice_states = True
 
-client: Client = Client(intents=intents)
-client.tree = app_commands.CommandTree(client)
+discord_client: Client = Client(intents=intents)
+discord_client.tree = app_commands.CommandTree(discord_client)
 
-gpt_client = GPTClient(base_model=config.get_gpt_model_base())
+gpt_conversation_client = GPTClient(base_model=config.get_gpt_model_base())
+gpt_code_client = GPTClient(base_model=config.get_gpt_model_code())
 
 
-@client.event
+@discord_client.event
 async def on_ready():
-    print(f"We have logged in as {client.user}")
+    print(f"We have logged in as {discord_client.user}")
     # Saves the list of al the channels that the bot has permission to see
-    config.set_authorized_channel_set(set(client.get_all_channels()))
+    config.set_authorized_channel_set(set(discord_client.get_all_channels()))
     print(f"Message channels are {[x.name for x in config.get_message_channels()]}")
     my_guild = Object(config.get_guild_id())
-    client.tree.copy_global_to(guild=my_guild)
-    await client.tree.sync(guild=my_guild)
+    discord_client.tree.copy_global_to(guild=my_guild)
+    await discord_client.tree.sync(guild=my_guild)
     print("Commands synced")
 
 
-@client.event
+@discord_client.event
 async def on_message(message):
     # Process the message if it is sent from a tracked channel
     if config.has_x_message_channel(message.channel.id):
@@ -55,7 +56,7 @@ async def on_message(message):
             await message.channel.send(updated_message_content, reference=message)
 
 
-@client.event
+@discord_client.event
 async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
     if before.channel is after.channel:
         return
@@ -121,21 +122,21 @@ def __members_have_permission_to_view_voice_channel(message_channel, after_chann
 
 
 # Subscribe the text channel for messages from the bot
-@client.tree.command()
+@discord_client.tree.command()
 async def subscribe(interaction: Interaction):
     config.add_message_channel(interaction.channel.id)
     await interaction.response.send_message(f"Subscribed to channel {interaction.channel}")
 
 
 # Unsubscribe the text channel for messages from the bot
-@client.tree.command()
+@discord_client.tree.command()
 async def unsubscribe(interaction: Interaction):
     config.remove_message_channel(interaction.channel.id)
     await interaction.response.send_message(f"Unsubscribed to channel {interaction.channel}")
 
 
 # Set a user to be mentioned in the messages
-@client.tree.command()
+@discord_client.tree.command()
 async def mention_me(interaction: Interaction):
     channel_id = interaction.channel_id
     mention = interaction.user.mention
@@ -148,7 +149,7 @@ async def mention_me(interaction: Interaction):
 
 
 # Set a user to not be mentioned in the messages
-@client.tree.command()
+@discord_client.tree.command()
 async def unmention_me(interaction: Interaction):
     channel_id = interaction.channel_id
     mention = interaction.user.mention
@@ -163,63 +164,57 @@ async def unmention_me(interaction: Interaction):
 
 
 # Subscribe the text channel for messages from the bot
-@client.tree.command()
+@discord_client.tree.command()
 async def convert_x_messages(interaction: Interaction):
     config.add_x_message_channel(interaction.channel.id)
     await interaction.response.send_message(f"Listening x messages in {interaction.channel}")
 
 
 # Ask a question to GPT
-@client.tree.command(description="Ask a question to Chat GPT")
+@discord_client.tree.command(description="Ask a question to Chat GPT")
 async def ask_gpt(interaction: Interaction, query: str):
-    await gpt(interaction, query)
+    await gpt(gpt_conversation_client, interaction, query)
 
 
-@client.tree.command(description="Ask a question to Chat GPT to get a code snippet only")
+@discord_client.tree.command(description="Ask a question to Chat GPT to get a code snippet only")
 async def ask_gpt_code(interaction: Interaction, query: str):
-    await gpt(interaction, query, True, config.get_gpt_model_code())
+    await gpt(gpt_code_client, interaction, query, True)
 
 
-async def gpt(interaction: Interaction, query: str, code=False, model=None):
+async def gpt(client: GPTClient, interaction: Interaction, query: str, code=False):
     if interaction.channel_id != config.get_gpt_channel_id():
         await interaction.response.send_message("Not available in this channel")
         return
-    if len(query) > config.get_gpt_query_char_limit():
+    if len(query) > config.get_gpt_query_token_limit():
         await interaction.response.send_message(
-            f"Query cannot be longer than {config.get_gpt_query_char_limit()} characters. Yours is {len(query)}"
+            f"Query cannot be longer than {config.get_gpt_query_token_limit()} characters. Yours is {len(query)}"
         )
         return
-    if gpt_client.total_queries_length() > config.get_gpt_total_char_limit():
+    if client.total_queries_length() > config.get_gpt_total_token_limit():
         await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
         return
 
-    additional_context = []
+    instructions = ""
     if code:
-        additional_context.append(
-            {
-                "role": "system",
-                "content": "Only respond to questions with code snippets and nothing else.",
-            }
-        )
+        instructions = "Only respond to questions with code snippets and nothing else."
 
-    length = len(additional_context[0]["content"]) if additional_context else 0
     await interaction.response.defer()
-    response = gpt_client.ask_question(query, additional_context, model)
-    length += len(response)
-    await interaction.followup.send(f"Query:{query}\n\nAlper GPT: {response}")
-    gpt_client.clean_queries()
-    gpt_client.queries[datetime.now()] = length
+    response, total_tokens = client.ask_question(query, instructions)
+    await interaction.followup.send(f"Query:{query}\n\nAlper GPT: \n{response}")
+    client.clean_queries()
+    client.queries[datetime.now()] = total_tokens
 
 
 # Ask a question to GPT
-@client.tree.command(description="Reset the chat context for GPT commands")
+@discord_client.tree.command(description="Reset the chat context for GPT commands")
 async def reset_gpt_context(interaction: Interaction):
-    gpt_client.reset_context()
+    gpt_code_client.reset_context()
+    gpt_conversation_client.reset_context()
     await interaction.response.send_message("Context is reset!")
 
 
 # Calculate the download duration with the given speed and size
-@client.tree.command(description="How long would it take to download?")
+@discord_client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
         minutes = calculate_download_duration(speed_in_mbit, size_in_gb)
@@ -232,4 +227,4 @@ async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, siz
         await interaction.response.send_message("Unknown error")
 
 
-client.run(config.get_bot_token())
+discord_client.run(config.get_bot_token())

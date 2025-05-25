@@ -9,74 +9,45 @@ from openai import OpenAI
 class GPTClient:
     client: OpenAI
     queries: dict
-    history: list
+    last_message_id: str | None = None
     last_messaged_at: datetime
     base_model: str
 
-    BASE_HISTORY = [
-        {
-            "role": "system",
-            "content": "All answers must be shorter than 2000 characters.",
-        }
-    ]
     CONTEXT_DURATION_IN_HOURS = 2
 
     def __init__(self, base_model: str):
         self.client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
         self.queries = {datetime.now(): 0}
-        self.history = self.BASE_HISTORY.copy()
+        self.last_message_id = None
         self.last_messaged_at = datetime.now()
         self.base_model = base_model
 
-    def ask_when_taken(self, url: str, model=None):
-        if model is None:
-            model = self.base_model
-
-        query = self.client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "Tell me which city, country and year do you think this image taken? And what is your reasoning",
-                        },
-                        {"type": "image_url", "image_url": {"url": url}},
-                    ],
-                }
-            ],
-        )
-        return query.choices[0].message.content
-
-    def ask_question(self, content: str, additional_context: list = [], model=None):
-        if model is None:
-            model = self.base_model
+    def ask_question(self, content: str, instructions: str) -> (str, int):
+        model = self.base_model
 
         # clean history if the last message was sent more than `CONTEXT_DURATION_IN_HOURS` ago
         if self.last_messaged_at < datetime.now() - timedelta(hours=self.CONTEXT_DURATION_IN_HOURS):
-            self.history = self.BASE_HISTORY.copy()
+            self.last_message_id = None
             self.last_messaged_at = datetime.now()
 
-        # add current message to history
-        self.history.append({"role": "user", "content": content})
-
-        # create a copy of the current history
-        current_context = self.history.copy()
-
-        # add additional context if provided
-        if additional_context:
-            for context in additional_context:
-                current_context.append(context)
-
         # send the query to OpenAI
-        query = self.client.chat.completions.create(model=model, messages=current_context)
+        query = self.client.responses.create(
+            model=model,
+            input=content,
+            previous_response_id=self.last_message_id,
+            **({"instructions": instructions} if instructions else {}),
+        )
 
+        print(query.model_dump_json())
         # update the history with the response
-        self.history.append(query.choices[0].message)
+        self.last_message_id = query.id
         self.last_messaged_at = datetime.now()
 
-        return query.choices[0].message.content
+        for output in query.output:
+            if output.type == "message":
+                return output.content[0].text, query.usage.total_tokens
+
+        return "This is a system message, no text response, contact your Discord admin", query.usage.total_tokens
 
     def total_queries_length(self):
         return functools.reduce(operator.add, self.queries.values())
@@ -90,5 +61,5 @@ class GPTClient:
         print(self.queries)
 
     def reset_context(self):
-        self.history = self.BASE_HISTORY.copy()
+        self.last_message_id = None
         self.last_messaged_at = datetime.now()
