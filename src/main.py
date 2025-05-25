@@ -29,7 +29,7 @@ intents.voice_states = True
 client: Client = Client(intents=intents)
 client.tree = app_commands.CommandTree(client)
 
-gpt_client = GPTClient()
+gpt_client = GPTClient(config=config)
 
 
 @client.event
@@ -177,10 +177,10 @@ async def ask_gpt(interaction: Interaction, query: str):
 
 @client.tree.command(description="Ask a question to Chat GPT to get a code snippet only")
 async def ask_gpt_code(interaction: Interaction, query: str):
-    await gpt(interaction, query, True)
+    await gpt(interaction, query, True, "o4-mini")
 
 
-async def gpt(interaction: Interaction, query: str, code=False):
+async def gpt(interaction: Interaction, query: str, code=False, model=None):
     if interaction.channel_id != config.get_gpt_channel_id():
         await interaction.response.send_message("Not available in this channel")
         return
@@ -204,7 +204,7 @@ async def gpt(interaction: Interaction, query: str, code=False):
 
     length = len(additional_context[0]["content"]) if additional_context else 0
     await interaction.response.defer()
-    response = gpt_client.ask_question(query, additional_context)
+    response = gpt_client.ask_question(query, additional_context, model)
     length += len(response)
     await interaction.followup.send(f"Query:{query}\n\nAlper GPT: {response}")
     gpt_client.clean_queries()
