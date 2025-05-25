@@ -11,7 +11,7 @@ class GPTClient:
     queries: dict
     last_message_id: str | None = None
     last_messaged_at: datetime
-    base_model: str
+    model: str
 
     CONTEXT_DURATION_IN_HOURS = 2
 
@@ -20,10 +20,10 @@ class GPTClient:
         self.queries = {datetime.now(): 0}
         self.last_message_id = None
         self.last_messaged_at = datetime.now()
-        self.base_model = base_model
+        self.model = base_model
 
     def ask_question(self, content: str, instructions: str) -> (str, int):
-        model = self.base_model
+        model = self.model
 
         # clean history if the last message was sent more than `CONTEXT_DURATION_IN_HOURS` ago
         if self.last_messaged_at < datetime.now() - timedelta(hours=self.CONTEXT_DURATION_IN_HOURS):
@@ -38,7 +38,6 @@ class GPTClient:
             **({"instructions": instructions} if instructions else {}),
         )
 
-        print(query.model_dump_json())
         # update the history with the response
         self.last_message_id = query.id
         self.last_messaged_at = datetime.now()

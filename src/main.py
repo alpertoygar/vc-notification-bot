@@ -2,7 +2,6 @@ from datetime import datetime
 
 from discord import (
     Intents,
-    Client,
     Interaction,
     app_commands,
     Object,
@@ -10,6 +9,7 @@ from discord import (
     VoiceState,
     Permissions,
 )
+from discord import Client as DiscordClient
 
 from BotConfig import BotConfig
 from gpt import GPTClient
@@ -26,7 +26,7 @@ intents = Intents.default()
 intents.message_content = True
 intents.voice_states = True
 
-discord_client: Client = Client(intents=intents)
+discord_client: DiscordClient = DiscordClient(intents=intents)
 discord_client.tree = app_commands.CommandTree(discord_client)
 
 gpt_conversation_client = GPTClient(base_model=config.get_gpt_model_base())
@@ -181,16 +181,16 @@ async def ask_gpt_code(interaction: Interaction, query: str):
     await gpt(gpt_code_client, interaction, query, True)
 
 
-async def gpt(client: GPTClient, interaction: Interaction, query: str, code=False):
+async def gpt(gpt_client: GPTClient, interaction: Interaction, query: str, code=False):
     if interaction.channel_id != config.get_gpt_channel_id():
         await interaction.response.send_message("Not available in this channel")
         return
     if len(query) > config.get_gpt_query_token_limit():
         await interaction.response.send_message(
-            f"Query cannot be longer than {config.get_gpt_query_token_limit()} characters. Yours is {len(query)}"
+            f"Query cannot be longer than {config.get_gpt_query_token_limit()} tokens. Yours is {len(query)}"
         )
         return
-    if client.total_queries_length() > config.get_gpt_total_token_limit():
+    if gpt_client.total_queries_length() > config.get_gpt_total_token_limit():
         await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
         return
 
@@ -199,10 +199,10 @@ async def gpt(client: GPTClient, interaction: Interaction, query: str, code=Fals
         instructions = "Only respond to questions with code snippets and nothing else."
 
     await interaction.response.defer()
-    response, total_tokens = client.ask_question(query, instructions)
+    response, total_tokens = gpt_client.ask_question(query, instructions)
     await interaction.followup.send(f"Query:{query}\n\nAlper GPT: \n{response}")
-    client.clean_queries()
-    client.queries[datetime.now()] = total_tokens
+    gpt_client.clean_queries()
+    gpt_client.queries[datetime.now()] = total_tokens
 
 
 # Ask a question to GPT
