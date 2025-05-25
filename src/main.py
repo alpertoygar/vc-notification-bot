@@ -177,7 +177,7 @@ async def ask_gpt(interaction: Interaction, query: str):
 
 @client.tree.command(description="Ask a question to Chat GPT to get a code snippet only")
 async def ask_gpt_code(interaction: Interaction, query: str):
-    await gpt(interaction, query, True, "o4-mini")
+    await gpt(interaction, query, True, config.get_gpt_model_code())
 
 
 async def gpt(interaction: Interaction, query: str, code=False, model=None):

@@ -33,7 +33,7 @@ class GPTClient:
     def ask_when_taken(self, url: str, model=None):
         if model is None:
             model = self.config.get_gpt_model_base()
-            
+
         query = self.client.chat.completions.create(
             model=model,
             messages=[
@@ -54,7 +54,7 @@ class GPTClient:
     def ask_question(self, content: str, additional_context: list = [], model=None):
         if model is None:
             model = self.config.get_gpt_model_base()
-            
+
         # clean history if the last message was sent more than `CONTEXT_DURATION_IN_HOURS` ago
         if self.last_messaged_at < datetime.now() - timedelta(hours=self.CONTEXT_DURATION_IN_HOURS):
             self.history = self.BASE_HISTORY.copy()
