@@ -185,29 +185,26 @@ async def gpt(interaction: Interaction, query: str, code=False):
         await interaction.response.send_message("Not available in this channel")
         return
     if len(query) > config.get_gpt_query_char_limit():
-        await interaction.response.send_message(f"Query cant be longer than 200 characters. Your is {len(query)}")
+        await interaction.response.send_message(
+            f"Query cannot be longer than {config.get_gpt_query_char_limit()} characters. Yours is {len(query)}"
+        )
         return
     if gpt_client.total_queries_length() > config.get_gpt_total_char_limit():
         await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
         return
-    history = [
-        {
-            "role": "system",
-            "content": "All answers must be shorter than 2000 characters.",
-        }
-    ]
 
+    additional_context = []
     if code:
-        history.append(
+        additional_context.append(
             {
                 "role": "system",
                 "content": "Only respond to questions with code snippets and nothing else.",
             }
         )
 
-    length = len(history[0]["content"])
+    length = len(additional_context[0]["content"]) if additional_context else 0
     await interaction.response.defer()
-    response = gpt_client.ask_question(query, history=history)
+    response = gpt_client.ask_question(query, additional_context)
     length += len(response)
     await interaction.followup.send(f"Query:{query}\n\nAlper GPT: {response}")
     gpt_client.clean_queries()
@@ -215,6 +212,13 @@ async def gpt(interaction: Interaction, query: str, code=False):
 
 
 # Ask a question to GPT
+@client.tree.command(description="Reset the chat context for GPT commands")
+async def reset_gpt_context(interaction: Interaction):
+    gpt_client.reset_context()
+    await interaction.response.send_message("Context is reset!")
+
+
+# Calculate the download duration with the given speed and size
 @client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
