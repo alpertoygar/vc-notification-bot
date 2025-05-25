@@ -19,7 +19,7 @@ idna==3.7
 iniconfig==2.0.0
 jiter==0.6.1
 multidict==6.0.4
-openai==1.52.0
+openai==1.82.0
 packaging==24.2
 pluggy==1.5.0
 pydantic==2.9.2
