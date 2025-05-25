@@ -190,28 +190,30 @@ async def gpt(interaction: Interaction, query: str, code=False):
     if gpt_client.total_queries_length() > config.get_gpt_total_char_limit():
         await interaction.response.send_message("Too many queries sent wait an hour before sending another message")
         return
-    history = [
-        {
-            "role": "system",
-            "content": "All answers must be shorter than 2000 characters.",
-        }
-    ]
 
+    additional_context = []
     if code:
-        history.append(
+        additional_context.append(
             {
                 "role": "system",
                 "content": "Only respond to questions with code snippets and nothing else.",
             }
         )
 
-    length = len(history[0]["content"])
+    length = len(additional_context[0]["content"]) if additional_context else 0
     await interaction.response.defer()
-    response = gpt_client.ask_question(query, history=history)
+    response = gpt_client.ask_question(query, additional_context)
     length += len(response)
     await interaction.followup.send(f"Query:{query}\n\nAlper GPT: {response}")
     gpt_client.clean_queries()
     gpt_client.queries[datetime.now()] = length
+
+
+# Ask a question to GPT
+@client.tree.command(description="Reset the chat context for GPT commands")
+async def reset_gpt_context(interaction: Interaction):
+    gpt_client.reset_context()
+    await interaction.response.send_message("Context is reset!")
 
 
 # Ask a question to GPT

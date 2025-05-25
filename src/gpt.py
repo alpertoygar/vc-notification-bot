@@ -9,10 +9,22 @@ from openai import OpenAI
 class GPTClient:
     client: OpenAI
     queries: dict
+    history: list
+    last_messaged_at: datetime
+
+    BASE_HISTORY = [
+        {
+            "role": "system",
+            "content": "All answers must be shorter than 2000 characters.",
+        }
+    ]
+    CONTEXT_DURATION_IN_HOURS = 2
 
     def __init__(self):
         self.client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
         self.queries = {datetime.now(): 0}
+        self.history = self.BASE_HISTORY.copy()
+        self.last_messaged_at = datetime.now()
 
     def ask_when_taken(self, url: str, model="gpt-4o-mini"):
         query = self.client.chat.completions.create(
@@ -32,13 +44,29 @@ class GPTClient:
         )
         return query.choices[0].message.content
 
-    def ask_question(self, content: str, history=None, model="gpt-4o-mini"):
-        if not history:
-            history = []
+    def ask_question(self, content: str, additional_context: list = [], model="gpt-4o-mini"):
+        # clean history if the last message was sent more than `CONTEXT_DURATION_IN_HOURS` ago
+        if self.last_messaged_at < datetime.now() - timedelta(hours=self.CONTEXT_DURATION_IN_HOURS):
+            self.history = self.BASE_HISTORY.copy()
+            self.last_messaged_at = datetime.now()
 
-        history.extend([{"role": "user", "content": content}])
+        # add current message to history
+        self.history.append({"role": "user", "content": content})
 
-        query = self.client.chat.completions.create(model=model, messages=history)
+        # create a copy of the current history
+        current_context = self.history.copy()
+
+        # add additional context if provided
+        if additional_context:
+            for context in additional_context:
+                current_context.append(context)
+
+        # send the query to OpenAI
+        query = self.client.chat.completions.create(model=model, messages=current_context)
+
+        # update the history with the response
+        self.history.append(query.choices[0].message)
+        self.last_messaged_at = datetime.now()
 
         return query.choices[0].message.content
 
@@ -52,3 +80,7 @@ class GPTClient:
                 result[timestamp] = char_len
         self.queries = result
         print(self.queries)
+
+    def reset_context(self):
+        self.history = self.BASE_HISTORY.copy()
+        self.last_messaged_at = datetime.now()
