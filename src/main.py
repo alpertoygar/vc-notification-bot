@@ -216,7 +216,7 @@ async def reset_gpt_context(interaction: Interaction):
     await interaction.response.send_message("Context is reset!")
 
 
-# Ask a question to GPT
+# Calculate the download duration with the given speed and size
 @client.tree.command(description="How long would it take to download?")
 async def how_long_to_download(interaction: Interaction, speed_in_mbit: str, size_in_gb: str):
     try:
