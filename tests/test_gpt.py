@@ -5,26 +5,17 @@ from src.gpt import GPTClient
 
 
 @pytest.fixture
-def mock_config():
-    config = MagicMock()
-    config.get_gpt_model_base.return_value = "gpt-4.1-mini"
-    config.get_gpt_model_code.return_value = "o4-mini"
-    config.get_gpt_query_char_limit.return_value = 400
-    config.get_gpt_total_char_limit.return_value = 40000
-    return config
-
-
-@pytest.fixture
-def gpt_client_fixture(mock_config):
+def gpt_client_fixture():
     with patch("src.gpt.OpenAI") as openai:
         mock_openai = MagicMock()
         openai.return_value = mock_openai
-        gpt_client = GPTClient(mock_config)
-        yield gpt_client, mock_openai
+        base_model = "gpt-4.1-mini"
+        gpt_client = GPTClient(base_model)
+        yield gpt_client, mock_openai, base_model
 
 
-def test_ask_question(gpt_client_fixture, mock_config):
-    gpt_client, mock_openai = gpt_client_fixture
+def test_ask_question(gpt_client_fixture):
+    gpt_client, mock_openai, base_model = gpt_client_fixture
 
     mock_openai.chat = MagicMock(
         completions=MagicMock(
@@ -37,7 +28,7 @@ def test_ask_question(gpt_client_fixture, mock_config):
 
     assert response == "Amsterdam"
     mock_openai.chat.completions.create.assert_called_once_with(
-        model=mock_config.get_gpt_model_base(),
+        model=base_model,
         messages=pytest.approx(
             [
                 {"role": "system", "content": "All answers must be shorter than 2000 characters."},
@@ -49,7 +40,7 @@ def test_ask_question(gpt_client_fixture, mock_config):
 
 
 def test_ask_question_with_custom_model(gpt_client_fixture):
-    gpt_client, mock_openai = gpt_client_fixture
+    gpt_client, mock_openai, _ = gpt_client_fixture
 
     mock_openai.chat = MagicMock(
         completions=MagicMock(
@@ -74,8 +65,8 @@ def test_ask_question_with_custom_model(gpt_client_fixture):
     )
 
 
-def test_ask_when_taken(gpt_client_fixture, mock_config):
-    gpt_client, mock_openai = gpt_client_fixture
+def test_ask_when_taken(gpt_client_fixture):
+    gpt_client, mock_openai, base_model = gpt_client_fixture
 
     mock_openai.chat = MagicMock(
         completions=MagicMock(
@@ -90,7 +81,7 @@ def test_ask_when_taken(gpt_client_fixture, mock_config):
 
     assert response == "Paris, France, 2010"
     mock_openai.chat.completions.create.assert_called_once_with(
-        model=mock_config.get_gpt_model_base(),
+        model=base_model,
         messages=[
             {
                 "role": "user",

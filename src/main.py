@@ -29,7 +29,7 @@ intents.voice_states = True
 client: Client = Client(intents=intents)
 client.tree = app_commands.CommandTree(client)
 
-gpt_client = GPTClient(config=config)
+gpt_client = GPTClient(base_model=config.get_gpt_model_base())
 
 
 @client.event
