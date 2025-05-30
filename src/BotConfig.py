@@ -10,8 +10,10 @@ class BotConfig:
         self.__bot_token: str
         self.__guild_id: int
         self.__gpt_channel_id: int
-        self.__gpt_query_char_limit: int
-        self.__gpt_total_char_limit: int
+        self.__gpt_model_code: str
+        self.__gpt_model_base: str
+        self.__gpt_query_token_limit: int
+        self.__gpt_total_token_limit: int
         self.__config_path = os.path.join(os.getcwd(), "config.json")
         self.__load_config()
         self.__authorized_channel_set: set = set()
@@ -39,10 +41,14 @@ class BotConfig:
                     raise ValueError("You must have guild id in your config")
                 if "gpt_channel_id" in config_data:
                     self.__gpt_channel_id = config_data["gpt_channel_id"]
-                if "gpt_query_char_limit" in config_data:
-                    self.__gpt_query_char_limit = config_data["gpt_query_char_limit"]
-                if "gpt_total_char_limit" in config_data:
-                    self.__gpt_total_char_limit = config_data["gpt_total_char_limit"]
+                if "gpt_model_code" in config_data:
+                    self.__gpt_model_code = config_data["gpt_model_code"]
+                if "gpt_model_base" in config_data:
+                    self.__gpt_model_base = config_data["gpt_model_base"]
+                if "gpt_query_token_limit" in config_data:
+                    self.__gpt_query_token_limit = config_data["gpt_query_token_limit"]
+                if "gpt_total_token_limit" in config_data:
+                    self.__gpt_total_token_limit = config_data["gpt_total_token_limit"]
         except FileNotFoundError:
             print(f"Config file not found at {self.__config_path}")
         except json.JSONDecodeError:
@@ -55,6 +61,10 @@ class BotConfig:
             "x_message_channels": list(self.__x_message_channels),
             "bot_token": self.__bot_token,
             "guild_id": self.__guild_id,
+            "gpt_model_code": self.__gpt_model_code,
+            "gpt_model_base": self.__gpt_model_base,
+            "gpt_query_token_limit": self.__gpt_query_token_limit,
+            "gpt_total_token_limit": self.__gpt_total_token_limit,
         }
 
         try:
@@ -73,11 +83,17 @@ class BotConfig:
     def get_gpt_channel_id(self):
         return self.__gpt_channel_id
 
-    def get_gpt_query_char_limit(self):
-        return self.__gpt_query_char_limit
+    def get_gpt_model_code(self):
+        return self.__gpt_model_code
 
-    def get_gpt_total_char_limit(self):
-        return self.__gpt_total_char_limit
+    def get_gpt_model_base(self):
+        return self.__gpt_model_base
+
+    def get_gpt_query_token_limit(self):
+        return self.__gpt_query_token_limit
+
+    def get_gpt_total_token_limit(self):
+        return self.__gpt_total_token_limit
 
     def set_authorized_channel_set(self, channel_list: set):
         self.__authorized_channel_set = channel_list
