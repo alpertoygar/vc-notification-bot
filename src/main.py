@@ -25,6 +25,8 @@ config = BotConfig()
 intents = Intents.default()
 intents.message_content = True
 intents.voice_states = True
+intents.presences = True
+intents.members = True
 
 discord_client: DiscordClient = DiscordClient(intents=intents)
 discord_client.tree = app_commands.CommandTree(discord_client)
@@ -42,6 +44,7 @@ async def on_ready():
     my_guild = Object(config.get_guild_id())
     discord_client.tree.copy_global_to(guild=my_guild)
     await discord_client.tree.sync(guild=my_guild)
+    await discord_client.get_guild(config.get_guild_id()).chunk()
     print("Commands synced")
 
 
