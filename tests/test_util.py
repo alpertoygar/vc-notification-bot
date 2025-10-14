@@ -187,3 +187,46 @@ class TestFormatRedditPostInfo:
         """Test that passing None raises a ValueError."""
         with pytest.raises(ValueError):
             format_reddit_post_info(None)
+
+
+class ExtractRedditPostContentFromStr:
+    @pytest.mark.asyncio
+    async def test_extracts_and_formats_post_successfully(self):
+        """Test that valid Reddit post URLs return correctly formatted message."""
+        mock_post_data: RedditPostInfo = {
+            "title": "Test Post Title",
+            "selftext": "This is some test content for the post.",
+            "author": "testuser",
+            "subreddit": "testsubreddit",
+        }
+        mock_json_response_value = [{"data": {"children": [{"data": mock_post_data}]}}]
+
+        with patch("httpx.AsyncClient") as mock_client:
+            # Mock the JSON response for the actual post
+            mock_json_response = Mock()
+            mock_json_response.json.return_value = mock_json_response_value
+
+            # Set up the mock to return the JSON response
+            mock_context = mock_client.return_value.__aenter__.return_value
+            mock_context.get.return_value = mock_json_response
+
+            test_str = (
+                "Check out this Reddit post: https://www.reddit.com/r/testsubreddit/comments/abc123/test_post_title/"
+            )
+            result = await extract_reddit_post_content_from_str(test_str)
+
+            expected = "*Reddit Post from r/testsubreddit by u/testuser*\n\n**Test Post Title**\n\nThis is some test content for the post.\n"
+            assert result == expected
+
+    @pytest.mark.parametrize(
+        "test_str",
+        [
+            "No Reddit URL here!",
+            "Just some random text.",
+            "Visit https://example.com for more info.",
+        ],
+    )
+    async def test_raises_exception_for_str_without_reddit_url(self, test_str):
+        """Test that passing a string without a Reddit URL raises a ValueError."""
+        with pytest.raises(ValueError):
+            await extract_reddit_post_content_from_str(test_str)

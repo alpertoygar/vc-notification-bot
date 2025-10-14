@@ -122,3 +122,19 @@ def format_reddit_post_info(post_info: RedditPostInfo) -> str:
         message += f"\n🔗 [Link to content]({content})\n"
 
     return message
+
+
+async def extract_reddit_post_content_from_str(str: str) -> str:
+    """
+    Extracts and returns the content from Reddit post information.
+    """
+    match = search(REDDIT_POST_URL_REGEX, str)
+    if match:
+        post_url = match.group(0)
+        post_info = await fetch_reddit_post_info(post_url)
+        print(f"Fetched post info: {post_info}")
+        formatted_message = format_reddit_post_info(post_info)
+        print(f"Formatted message: {formatted_message}")
+        return formatted_message
+
+    raise ValueError("No Reddit URL found in the provided string")
