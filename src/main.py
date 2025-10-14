@@ -4,6 +4,7 @@ from re import search
 from discord import (
     Intents,
     Interaction,
+    Message,
     app_commands,
     Object,
     Member,
@@ -11,7 +12,7 @@ from discord import (
     Permissions,
 )
 from discord import Client as DiscordClient
-
+import pprint
 from BotConfig import BotConfig
 from gpt import GPTClient
 from util import (
@@ -55,7 +56,7 @@ async def on_ready():
 
 
 @discord_client.event
-async def on_message(message):
+async def on_message(message: Message):
     # Process the message if it is sent from a tracked channel
     if config.has_x_message_channel(message.channel.id):
         # Reply with updated content if the message has the twitter url in it
@@ -65,7 +66,6 @@ async def on_message(message):
             await message.channel.send(updated_message_content, reference=message)
 
     if is_str_with_reddit_url(message.content):
-        print(f"Reddit url found in message {message.id}")
         try:
             formatted_message = await extract_reddit_post_content_from_str(message.content)
             await message.channel.send(formatted_message, reference=message)

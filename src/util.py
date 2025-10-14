@@ -72,9 +72,6 @@ async def fetch_reddit_post_info(url: str) -> Optional[RedditPostInfo]:
             response.raise_for_status()
             data = response.json()
 
-            print(f"Response JSON type: {type(data)}")
-            print("data:", data)
-
             # Extract post data from Reddit API response structure
             if isinstance(data, list) and len(data) > 0:
                 post_data = data[0]["data"]["children"][0]["data"]
@@ -132,9 +129,7 @@ async def extract_reddit_post_content_from_str(str: str) -> str:
     if match:
         post_url = match.group(0)
         post_info = await fetch_reddit_post_info(post_url)
-        print(f"Fetched post info: {post_info}")
         formatted_message = format_reddit_post_info(post_info)
-        print(f"Formatted message: {formatted_message}")
         return formatted_message
 
     raise ValueError("No Reddit URL found in the provided string")
