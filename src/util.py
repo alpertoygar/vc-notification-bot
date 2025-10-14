@@ -1,4 +1,14 @@
 from re import search, sub
+import httpx
+from typing import Optional, Dict, Any, TypedDict
+
+
+class RedditPostInfo(TypedDict):
+    title: str
+    content: str
+    author: str
+    subreddit: str
+
 
 REDDIT_POST_URL_REGEX = r"https:\/\/(?:www\.)?reddit\.com\/r\/[a-zA-Z0-9_]+(?:\/[^\s]*)?(?=\s|$|[^\w\/])"
 TWITTER_POST_URL_REGEX = r"(https:\/\/)(twitter|x)(\.com)(\/[^\/ ]+)(\/[^\/ ]+)(\/[^\/ ]+)"
@@ -35,3 +45,49 @@ def calculate_download_duration(speed_in_mbit: str, size_in_gb: str) -> str:
     seconds = size / speed
     minutes = "{0:.3g}".format(seconds / 60)
     return minutes
+
+
+async def fetch_reddit_post_info(url: str) -> Optional[RedditPostInfo]:
+    """
+    Fetches Reddit post information from a Reddit URL.
+    Returns a dictionary with title, content, author, and subreddit information.
+    """
+    try:
+        # Standard headers for all requests
+        headers = {"User-Agent": "vc-notification-bot"}
+
+        # Handle shared links (/s/) by following redirects to get the actual post URL
+        if "/s/" in url:
+            async with httpx.AsyncClient(follow_redirects=True) as client:
+                response = await client.get(url, headers=headers, timeout=10.0)
+                url = str(response.url)
+
+        # Remove query parameters and add .json suffix
+        clean_url = url.split("?")[0]
+        json_url = clean_url.rstrip("/") + ".json"
+
+        # Fetch post data from Reddit's JSON API
+        async with httpx.AsyncClient() as client:
+            response = await client.get(json_url, headers=headers, timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+
+            print(f"Response JSON type: {type(data)}")
+            print("data:", data)
+
+            # Extract post data from Reddit API response structure
+            if isinstance(data, list) and len(data) > 0:
+                post_data = data[0]["data"]["children"][0]["data"]
+
+                return {
+                    "title": post_data.get("title", "No title"),
+                    "content": post_data.get("selftext", "") or post_data.get("url", ""),
+                    "author": post_data.get("author", "Unknown"),
+                    "subreddit": post_data.get("subreddit", "Unknown"),
+                }
+            else:
+                return None
+
+    except Exception as e:
+        print(f"Error fetching Reddit post: {e}")
+        return None
