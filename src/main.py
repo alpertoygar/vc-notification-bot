@@ -15,11 +15,14 @@ from BotConfig import BotConfig
 from gpt import GPTClient
 from util import (
     calculate_download_duration,
-    extract_reddit_post_content_from_str,
-    is_str_with_reddit_url,
     is_str_with_twitter_url,
     list_to_string,
     replace_twitter_urls_in_str,
+)
+
+from reddit import (
+    extract_reddit_post_content_from_str,
+    is_str_with_reddit_url,
 )
 
 config = BotConfig()
