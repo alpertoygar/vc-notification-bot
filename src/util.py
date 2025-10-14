@@ -91,3 +91,34 @@ async def fetch_reddit_post_info(url: str) -> Optional[RedditPostInfo]:
     except Exception as e:
         print(f"Error fetching Reddit post: {e}")
         return None
+
+
+def format_reddit_post_info(post_info: RedditPostInfo) -> str:
+    """
+    Formats Reddit post information into a Discord-friendly message.
+    """
+    if not post_info:
+        raise ValueError("post_info cannot be None")
+
+    title = post_info["title"]
+    content = post_info["content"]
+    author = post_info["author"]
+    subreddit = post_info["subreddit"]
+
+    # Truncate content if it's too long for Discord
+    max_content_length = 1200  # Leave room for embeds and other content
+    if content and len(content) > max_content_length:
+        content = content[:max_content_length] + "..."
+
+    # Format the message with better Discord formatting
+    message = f"*Reddit Post from r/{subreddit} by u/{author}*\n\n"
+    message += f"**{title}**\n"
+
+    if content and content.strip() and not content.startswith("http"):
+        # Only show content if it's text, not just a URL
+        message += f"\n{content}\n"
+    elif content and content.startswith("http"):
+        # If content is a URL (like an image), mention it
+        message += f"\n🔗 [Link to content]({content})\n"
+
+    return message

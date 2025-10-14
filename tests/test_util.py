@@ -2,6 +2,7 @@ from src.util import (
     RedditPostInfo,
     calculate_download_duration,
     fetch_reddit_post_info,
+    format_reddit_post_info,
     is_str_with_reddit_url,
 )
 from unittest.mock import Mock, patch
@@ -140,7 +141,7 @@ class TestFetchRedditPostInfo:
             assert mock_context.get.call_args[0][0] == expected
 
     @pytest.mark.asyncio
-    async def test_fetch_reddit_post_info_no_data(self):
+    async def test_returns_none_for_empty_response(self):
         """Test that no data in the JSON response returns None."""
         with patch("httpx.AsyncClient") as mock_client:
             # Mock an empty JSON response
@@ -151,3 +152,38 @@ class TestFetchRedditPostInfo:
 
             result = await fetch_reddit_post_info("https://reddit.com/r/test/comments/123/test/")
             assert result is None
+
+
+class TestFormatRedditPostInfo:
+    @pytest.mark.parametrize(
+        "post_info, expected",
+        [
+            (
+                {
+                    "title": "Test Post",
+                    "content": "This is a test post",
+                    "author": "testuser",
+                    "subreddit": "testsub",
+                },
+                "*Reddit Post from r/testsub by u/testuser*\n\n**Test Post**\n\nThis is a test post\n",
+            ),
+            (
+                {
+                    "title": "Test Post with URL",
+                    "content": "https://example.com/image.jpg",
+                    "author": "testuser",
+                    "subreddit": "testsub",
+                },
+                "*Reddit Post from r/testsub by u/testuser*\n\n**Test Post with URL**\n\n🔗 [Link to content](https://example.com/image.jpg)\n",
+            ),
+        ],
+    )
+    def test_formats_posts_successfully(self, post_info, expected):
+        """Test formatting of Reddit post information."""
+        result = format_reddit_post_info(post_info)
+        assert result == expected
+
+    def test_raises_exception_for_none_input(self):
+        """Test that passing None raises a ValueError."""
+        with pytest.raises(ValueError):
+            format_reddit_post_info(None)
