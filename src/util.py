@@ -1,6 +1,6 @@
 from re import search, sub
 import httpx
-from typing import Optional, Dict, Any, TypedDict
+from typing import Optional, TypedDict
 
 
 class RedditPostInfo(TypedDict):

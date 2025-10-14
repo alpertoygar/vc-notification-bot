@@ -1,5 +1,4 @@
 from datetime import datetime
-from re import search
 
 from discord import (
     Intents,
@@ -21,9 +20,6 @@ from util import (
     is_str_with_twitter_url,
     list_to_string,
     replace_twitter_urls_in_str,
-    fetch_reddit_post_info,
-    format_reddit_post_info,
-    REDDIT_POST_URL_REGEX,
 )
 
 config = BotConfig()

@@ -1,6 +1,7 @@
 from src.util import (
     RedditPostInfo,
     calculate_download_duration,
+    extract_reddit_post_content_from_str,
     fetch_reddit_post_info,
     format_reddit_post_info,
     is_str_with_reddit_url,
@@ -189,7 +190,7 @@ class TestFormatRedditPostInfo:
             format_reddit_post_info(None)
 
 
-class ExtractRedditPostContentFromStr:
+class TestExtractRedditPostContentFromStr:
     @pytest.mark.asyncio
     async def test_extracts_and_formats_post_successfully(self):
         """Test that valid Reddit post URLs return correctly formatted message."""
@@ -218,6 +219,7 @@ class ExtractRedditPostContentFromStr:
             expected = "*Reddit Post from r/testsubreddit by u/testuser*\n\n**Test Post Title**\n\nThis is some test content for the post.\n"
             assert result == expected
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_str",
         [
