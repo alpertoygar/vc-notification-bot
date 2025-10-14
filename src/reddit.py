@@ -32,6 +32,7 @@ class RedditClient:
     async def get(self, url: str) -> httpx.Response:
         return await self.client.get(url)
 
+    @classmethod
     async def close(cls):
         """Close the HTTP client when done."""
         if hasattr(cls._instance, "client"):

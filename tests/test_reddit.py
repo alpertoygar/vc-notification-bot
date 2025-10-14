@@ -208,7 +208,7 @@ class TestExtractRedditPostContentFromStr:
     @pytest.mark.asyncio
     async def test_extracts_and_formats_post_successfully(self):
         """Test that valid Reddit post URLs return correctly formatted message."""
-        mock_post_data: RedditPostInfo = {
+        mock_post_data = {
             "title": "Test Post Title",
             "selftext": "This is some test content for the post.",
             "author": "testuser",
