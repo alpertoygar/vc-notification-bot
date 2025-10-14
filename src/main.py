@@ -1,4 +1,5 @@
 from datetime import datetime
+from re import search
 
 from discord import (
     Intents,
@@ -15,9 +16,14 @@ from BotConfig import BotConfig
 from gpt import GPTClient
 from util import (
     calculate_download_duration,
-    list_to_string,
+    extract_reddit_post_content_from_str,
+    is_str_with_reddit_url,
     is_str_with_twitter_url,
+    list_to_string,
     replace_twitter_urls_in_str,
+    fetch_reddit_post_info,
+    format_reddit_post_info,
+    REDDIT_POST_URL_REGEX,
 )
 
 config = BotConfig()
@@ -57,6 +63,15 @@ async def on_message(message):
             print(f"Replacing twitter urls in message {message.id}")
             updated_message_content = replace_twitter_urls_in_str(message.content)
             await message.channel.send(updated_message_content, reference=message)
+
+    if is_str_with_reddit_url(message.content):
+        print(f"Reddit url found in message {message.id}")
+        try:
+            formatted_message = await extract_reddit_post_content_from_str(message.content)
+            await message.channel.send(formatted_message, reference=message)
+        except Exception as e:
+            print(f"Error processing Reddit URL: {e}")
+            return
 
 
 @discord_client.event
