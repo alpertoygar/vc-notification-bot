@@ -12,7 +12,6 @@ from discord import (
     Permissions,
 )
 from discord import Client as DiscordClient
-import pprint
 from BotConfig import BotConfig
 from gpt import GPTClient
 from util import (
@@ -65,7 +64,7 @@ async def on_message(message: Message):
             updated_message_content = replace_twitter_urls_in_str(message.content)
             await message.channel.send(updated_message_content, reference=message)
 
-    if is_str_with_reddit_url(message.content):
+    if config.is_reddit_user(message.author.id) and is_str_with_reddit_url(message.content):
         try:
             formatted_message = await extract_reddit_post_content_from_str(message.content)
             await message.channel.send(formatted_message, reference=message)
