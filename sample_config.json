@@ -8,5 +8,6 @@
     "gpt_model_code": "<YOUR GPT MODEL CODE HERE>",
     "gpt_model_base": "<YOUR GPT MODEL BASE NAME HERE>",
     "gpt_query_token_limit": "<(THIS IS AN INTEGER REMOVE QUOTES) GPT QUERY MAX TOKEN LIMIT>",
-    "gpt_total_token_limit": "<(THIS IS AN INTEGER REMOVE QUOTES) GPT TOTAL QUERY AND RESPONSE TOKEN LIMIT FOR AN HOUR>"
+    "gpt_total_token_limit": "<(THIS IS AN INTEGER REMOVE QUOTES) GPT TOTAL QUERY AND RESPONSE TOKEN LIMIT FOR AN HOUR>",
+    "reddit_users": []
 }
