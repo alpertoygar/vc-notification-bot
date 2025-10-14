@@ -1,5 +1,6 @@
 from re import search, sub
 
+
 TWITTER_POST_URL_REGEX = r"(https:\/\/)(twitter|x)(\.com)(\/[^\/ ]+)(\/[^\/ ]+)(\/[^\/ ]+)"
 
 

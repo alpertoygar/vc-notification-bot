@@ -3,6 +3,7 @@ from datetime import datetime
 from discord import (
     Intents,
     Interaction,
+    Message,
     app_commands,
     Object,
     Member,
@@ -10,14 +11,18 @@ from discord import (
     Permissions,
 )
 from discord import Client as DiscordClient
-
 from BotConfig import BotConfig
 from gpt import GPTClient
 from util import (
     calculate_download_duration,
-    list_to_string,
     is_str_with_twitter_url,
+    list_to_string,
     replace_twitter_urls_in_str,
+)
+
+from reddit import (
+    extract_reddit_post_content_from_str,
+    is_str_with_reddit_url,
 )
 
 config = BotConfig()
@@ -49,7 +54,7 @@ async def on_ready():
 
 
 @discord_client.event
-async def on_message(message):
+async def on_message(message: Message):
     # Process the message if it is sent from a tracked channel
     if config.has_x_message_channel(message.channel.id):
         # Reply with updated content if the message has the twitter url in it
@@ -57,6 +62,14 @@ async def on_message(message):
             print(f"Replacing twitter urls in message {message.id}")
             updated_message_content = replace_twitter_urls_in_str(message.content)
             await message.channel.send(updated_message_content, reference=message)
+
+    if config.is_reddit_user(message.author.id) and is_str_with_reddit_url(message.content):
+        try:
+            formatted_message = await extract_reddit_post_content_from_str(message.content)
+            await message.channel.send(formatted_message, reference=message)
+        except Exception as e:
+            print(f"Error processing Reddit URL: {e}")
+            return
 
 
 @discord_client.event

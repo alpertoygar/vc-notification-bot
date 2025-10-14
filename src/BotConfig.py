@@ -14,6 +14,7 @@ class BotConfig:
         self.__gpt_model_base: str
         self.__gpt_query_token_limit: int
         self.__gpt_total_token_limit: int
+        self.__reddit_users: set = set()
         self.__config_path = os.path.join(os.getcwd(), "config.json")
         self.__load_config()
         self.__authorized_channel_set: set = set()
@@ -49,6 +50,8 @@ class BotConfig:
                     self.__gpt_query_token_limit = config_data["gpt_query_token_limit"]
                 if "gpt_total_token_limit" in config_data:
                     self.__gpt_total_token_limit = config_data["gpt_total_token_limit"]
+                if "reddit_users" in config_data:
+                    self.__reddit_users = set(config_data["reddit_users"])
         except FileNotFoundError:
             print(f"Config file not found at {self.__config_path}")
         except json.JSONDecodeError:
@@ -65,6 +68,7 @@ class BotConfig:
             "gpt_model_base": self.__gpt_model_base,
             "gpt_query_token_limit": self.__gpt_query_token_limit,
             "gpt_total_token_limit": self.__gpt_total_token_limit,
+            "reddit_users": list(self.__reddit_users),
         }
 
         try:
@@ -168,3 +172,9 @@ class BotConfig:
         if channel_id in self.__message_channels:
             self.__message_channels.remove(channel_id)
             self.__save_config()
+
+    def get_reddit_users(self):
+        return self.__reddit_users.copy()
+
+    def is_reddit_user(self, user_id: int) -> bool:
+        return user_id in self.__reddit_users
