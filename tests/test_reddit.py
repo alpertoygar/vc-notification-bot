@@ -42,7 +42,7 @@ class TestFetchRedditPostInfo:
     @pytest.mark.asyncio
     async def test_fetches_post_info_successfully(self):
         """Test that valid Reddit post URLs return correct post info."""
-        with patch("src.reddit.httpx.AsyncClient") as mock_client:
+        with patch("src.reddit.RedditClient") as mock_client:
             # Mock the JSON response for the actual post
             mock_json_response = Mock()
             mock_json_response.json.return_value = self.mock_json_response_value
@@ -54,10 +54,10 @@ class TestFetchRedditPostInfo:
             result = await fetch_reddit_post_info("https://reddit.com/r/test/comments/123/test/")
 
             assert result is not None
-            assert result["title"] == "Test Post"
-            assert result["content"] == "This is a test post"
-            assert result["author"] == "testuser"
-            assert result["subreddit"] == "testsub"
+            assert result.title == "Test Post"
+            assert result.content == "This is a test post"
+            assert result.author == "testuser"
+            assert result.subreddit == "testsub"
 
             assert mock_context.get.call_count == 1
             assert mock_context.get.call_args[0][0] == "https://reddit.com/r/test/comments/123/test.json"
@@ -65,7 +65,7 @@ class TestFetchRedditPostInfo:
     @pytest.mark.asyncio
     async def test_follows_redirects_for_shared_links(self):
         """Test that shared links (/s/) follow redirects correctly."""
-        with patch("src.reddit.httpx.AsyncClient") as mock_client:
+        with patch("src.reddit.RedditClient") as mock_client:
             # Mock the redirect response for shared link
             mock_redirect_response = Mock()
             mock_redirect_response.url = "https://www.reddit.com/r/test/comments/abc123/test_post/"
@@ -105,7 +105,7 @@ class TestFetchRedditPostInfo:
     )
     async def test_strips_query_parameters(self, url, expected):
         """Test that URLs with query parameters are handled correctly."""
-        with patch("httpx.AsyncClient") as mock_client:
+        with patch("src.reddit.RedditClient") as mock_client:
             # Mock the JSON response for the actual post
             mock_json_response = Mock()
             mock_json_response.json.return_value = self.mock_json_response_value
@@ -124,7 +124,7 @@ class TestFetchRedditPostInfo:
     @pytest.mark.asyncio
     async def test_returns_none_for_empty_response(self):
         """Test that no data in the JSON response returns None."""
-        with patch("httpx.AsyncClient") as mock_client:
+        with patch("src.reddit.RedditClient") as mock_client:
             # Mock an empty JSON response
             mock_json_response = Mock()
             mock_json_response.json.return_value = []
@@ -140,21 +140,21 @@ class TestFormatRedditPostInfo:
         "post_info, expected",
         [
             (
-                {
-                    "title": "Test Post",
-                    "content": "This is a test post",
-                    "author": "testuser",
-                    "subreddit": "testsub",
-                },
+                RedditPostInfo(
+                    title="Test Post",
+                    content="This is a test post",
+                    author="testuser",
+                    subreddit="testsub",
+                ),
                 "*Reddit Post from r/testsub by u/testuser*\n\n**Test Post**\n\nThis is a test post\n",
             ),
             (
-                {
-                    "title": "Test Post with URL",
-                    "content": "https://example.com/image.jpg",
-                    "author": "testuser",
-                    "subreddit": "testsub",
-                },
+                RedditPostInfo(
+                    title="Test Post with URL",
+                    content="https://example.com/image.jpg",
+                    author="testuser",
+                    subreddit="testsub",
+                ),
                 "*Reddit Post from r/testsub by u/testuser*\n\n**Test Post with URL**\n\n🔗 [Link to content](https://example.com/image.jpg)\n",
             ),
         ],
@@ -182,7 +182,7 @@ class TestExtractRedditPostContentFromStr:
         }
         mock_json_response_value = [{"data": {"children": [{"data": mock_post_data}]}}]
 
-        with patch("httpx.AsyncClient") as mock_client:
+        with patch("src.reddit.RedditClient") as mock_client:
             # Mock the JSON response for the actual post
             mock_json_response = Mock()
             mock_json_response.json.return_value = mock_json_response_value

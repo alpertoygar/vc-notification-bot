@@ -1,15 +1,41 @@
 from re import search
 import httpx
-from typing import Optional, TypedDict
+from typing import Optional
+
+from pydantic import BaseModel
 
 REDDIT_POST_URL_REGEX = r"https:\/\/(?:www\.)?reddit\.com\/r\/[a-zA-Z0-9_]+(?:\/[^\s]*)?(?=\s|$|[^\w\/])"
 
 
-class RedditPostInfo(TypedDict):
+class RedditPostInfo(BaseModel):
     title: str
     content: str
     author: str
     subreddit: str
+
+
+class RedditClient:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(RedditClient, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if not self._initialized:
+            self.headers = {"User-Agent": "vc-notification-bot"}
+            self.client = httpx.AsyncClient(follow_redirects=True, headers=self.headers, timeout=10.0)
+            RedditClient._initialized = True
+
+    async def get(self, url: str) -> httpx.Response:
+        return await self.client.get(url)
+
+    async def close(self):
+        """Close the HTTP client when done."""
+        if hasattr(self, "client"):
+            await self.client.aclose()
 
 
 def is_str_with_reddit_url(str: str) -> bool:
@@ -22,13 +48,10 @@ async def fetch_reddit_post_info(url: str) -> Optional[RedditPostInfo]:
     Returns a dictionary with title, content, author, and subreddit information.
     """
     try:
-        # Standard headers for all requests
-        headers = {"User-Agent": "vc-notification-bot"}
-
         # Handle shared links (/s/) by following redirects to get the actual post URL
         if "/s/" in url:
-            async with httpx.AsyncClient(follow_redirects=True) as client:
-                response = await client.get(url, headers=headers, timeout=10.0)
+            async with RedditClient() as reddit_client:
+                response = await reddit_client.get(url)
                 url = str(response.url)
 
         # Remove query parameters and add .json suffix
@@ -36,21 +59,21 @@ async def fetch_reddit_post_info(url: str) -> Optional[RedditPostInfo]:
         json_url = clean_url.rstrip("/") + ".json"
 
         # Fetch post data from Reddit's JSON API
-        async with httpx.AsyncClient() as client:
-            response = await client.get(json_url, headers=headers, timeout=10.0)
+        async with RedditClient() as reddit_client:
+            response = await reddit_client.get(json_url)
             response.raise_for_status()
             data = response.json()
 
             # Extract post data from Reddit API response structure
-            if isinstance(data, list) and len(data) > 0:
+            if data:
                 post_data = data[0]["data"]["children"][0]["data"]
 
-                return {
-                    "title": post_data.get("title", "No title"),
-                    "content": post_data.get("selftext", "") or post_data.get("url", ""),
-                    "author": post_data.get("author", "Unknown"),
-                    "subreddit": post_data.get("subreddit", "Unknown"),
-                }
+                return RedditPostInfo(
+                    title=post_data.get("title", "No title"),
+                    content=post_data.get("selftext", "") or post_data.get("url", ""),
+                    author=post_data.get("author", "Unknown"),
+                    subreddit=post_data.get("subreddit", "Unknown"),
+                )
             else:
                 return None
 
@@ -66,10 +89,10 @@ def format_reddit_post_info(post_info: RedditPostInfo) -> str:
     if not post_info:
         raise ValueError("post_info cannot be None")
 
-    title = post_info["title"]
-    content = post_info["content"]
-    author = post_info["author"]
-    subreddit = post_info["subreddit"]
+    title = post_info.title
+    content = post_info.content.strip()
+    author = post_info.author
+    subreddit = post_info.subreddit
 
     # Truncate content if it's too long for Discord
     max_content_length = 1200  # Leave room for embeds and other content
@@ -80,12 +103,12 @@ def format_reddit_post_info(post_info: RedditPostInfo) -> str:
     message = f"*Reddit Post from r/{subreddit} by u/{author}*\n\n"
     message += f"**{title}**\n"
 
-    if content and content.strip() and not content.startswith("http"):
-        # Only show content if it's text, not just a URL
-        message += f"\n{content}\n"
-    elif content and content.startswith("http"):
+    if content.startswith("http"):
         # If content is a URL (like an image), mention it
         message += f"\n🔗 [Link to content]({content})\n"
+    else:
+        # Only show content if it's text, not just a URL
+        message += f"\n{content}\n"
 
     return message
 
