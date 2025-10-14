@@ -32,10 +32,12 @@ class RedditClient:
     async def get(self, url: str) -> httpx.Response:
         return await self.client.get(url)
 
-    async def close(self):
+    async def close(cls):
         """Close the HTTP client when done."""
-        if hasattr(self, "client"):
-            await self.client.aclose()
+        if hasattr(cls._instance, "client"):
+            await cls._instance.client.aclose()
+        cls._instance = None
+        cls._initialized = False
 
 
 def is_str_with_reddit_url(str: str) -> bool:
@@ -47,38 +49,33 @@ async def fetch_reddit_post_info(url: str) -> Optional[RedditPostInfo]:
     Fetches Reddit post information from a Reddit URL.
     Returns a dictionary with title, content, author, and subreddit information.
     """
-    try:
-        # Handle shared links (/s/) by following redirects to get the actual post URL
-        if "/s/" in url:
-            async with RedditClient() as reddit_client:
-                response = await reddit_client.get(url)
-                url = str(response.url)
+    reddit_client = RedditClient()
 
-        # Remove query parameters and add .json suffix
-        clean_url = url.split("?")[0]
-        json_url = clean_url.rstrip("/") + ".json"
+    # Handle shared links (/s/) by following redirects to get the actual post URL
+    if "/s/" in url:
+        response = await reddit_client.get(url)
+        url = str(response.url)
 
-        # Fetch post data from Reddit's JSON API
-        async with RedditClient() as reddit_client:
-            response = await reddit_client.get(json_url)
-            response.raise_for_status()
-            data = response.json()
+    # Remove query parameters and add .json suffix
+    clean_url = url.split("?")[0]
+    json_url = clean_url.rstrip("/") + ".json"
 
-            # Extract post data from Reddit API response structure
-            if data:
-                post_data = data[0]["data"]["children"][0]["data"]
+    # Fetch post data from Reddit's JSON API
+    response = await reddit_client.get(json_url)
+    response.raise_for_status()
+    data = response.json()
 
-                return RedditPostInfo(
-                    title=post_data.get("title", "No title"),
-                    content=post_data.get("selftext", "") or post_data.get("url", ""),
-                    author=post_data.get("author", "Unknown"),
-                    subreddit=post_data.get("subreddit", "Unknown"),
-                )
-            else:
-                return None
+    # Extract post data from Reddit API response structure
+    if data:
+        post_data = data[0]["data"]["children"][0]["data"]
 
-    except Exception as e:
-        print(f"Error fetching Reddit post: {e}")
+        return RedditPostInfo(
+            title=post_data.get("title", "No title"),
+            content=post_data.get("selftext", "") or post_data.get("url", ""),
+            author=post_data.get("author", "Unknown"),
+            subreddit=post_data.get("subreddit", "Unknown"),
+        )
+    else:
         return None
 
 
