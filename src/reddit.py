@@ -1,8 +1,10 @@
+import os
 from re import search
 import httpx
 from typing import Optional
 
 from pydantic import BaseModel
+import requests
 
 REDDIT_POST_URL_REGEX = r"https:\/\/(?:www\.)?reddit\.com\/r\/[a-zA-Z0-9_]+(?:\/[^\s]*)?(?=\s|$|[^\w\/])"
 
@@ -25,11 +27,25 @@ class RedditClient:
 
     def __init__(self):
         if not self._initialized:
+            reddit_client_id = os.getenv("REDDIT_CLIENT_ID")
+            reddit_client_secret = os.getenv("REDDIT_CLIENT_SECRET")
+
+            auth = requests.auth.HTTPBasicAuth(reddit_client_id, reddit_client_secret)
             self.headers = {"User-Agent": "vc-notification-bot"}
+            data = {"grant_type": "client_credentials"}
+            res = requests.post(
+                "https://www.reddit.com/api/v1/access_token", auth=auth, data=data, headers=self.headers
+            )
+            TOKEN = res.json()["access_token"]
+
+            self.headers = {**self.headers, **{"Authorization": f"bearer {TOKEN}"}}
             self.client = httpx.AsyncClient(follow_redirects=True, headers=self.headers, timeout=10.0)
             RedditClient._initialized = True
 
     async def get(self, url: str) -> httpx.Response:
+        # replace www with oauth
+        url = url.replace("www.reddit.com", "oauth.reddit.com")
+
         return await self.client.get(url)
 
     @classmethod
