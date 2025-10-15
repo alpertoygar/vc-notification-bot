@@ -44,7 +44,8 @@ class RedditClient:
 
     async def get(self, url: str) -> httpx.Response:
         # replace www with oauth
-        url = url.replace("www.reddit.com", "oauth.reddit.com")
+        url = url.replace("www.", "")
+        url = url.replace("reddit.com", "oauth.reddit.com")
 
         return await self.client.get(url)
 
