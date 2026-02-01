@@ -1,7 +1,6 @@
 from src.reddit import (
     RedditPostInfo,
-    extract_reddit_post_content_from_str,
-    fetch_reddit_post_info,
+    RedditClient,
     format_reddit_post_info,
     is_str_with_reddit_url,
 )
@@ -42,71 +41,64 @@ class TestFetchRedditPostInfo:
     @pytest.mark.asyncio
     async def test_fetches_post_info_successfully(self):
         """Test that valid Reddit post URLs return correct post info."""
-        with patch("src.reddit.RedditClient") as mock_client:
-            # Mock the JSON response for the actual post
-            mock_response = Mock()
-            mock_response.json.return_value = self.mock_json_response_value
-            mock_response.raise_for_status.return_value = None
+        # Mock the JSON response for the actual post
+        mock_response = Mock()
+        mock_response.json.return_value = self.mock_json_response_value
+        mock_response.raise_for_status.return_value = None
 
-            # Set up the mock RedditClient instance
-            mock_client_instance = AsyncMock()
-            mock_client_instance.get.return_value = mock_response
-            mock_client_instance.__aenter__.return_value = mock_client_instance
-            mock_client_instance.__aexit__.return_value = None
+        with patch.object(RedditClient, "__init__", lambda self: None):
+            client = RedditClient()
 
-            mock_client.return_value = mock_client_instance
+            with patch.object(client, "_RedditClient__get", new_callable=AsyncMock) as mock_get:
+                mock_get.return_value = mock_response
 
-            result = await fetch_reddit_post_info("https://reddit.com/r/test/comments/123/test/")
+                result = await client.fetch_reddit_post_info("https://reddit.com/r/test/comments/123/test/")
 
-            assert result is not None
-            assert result.title == "Test Post"
-            assert result.content == "This is a test post"
-            assert result.author == "testuser"
-            assert result.subreddit == "testsub"
+                assert result is not None
+                assert result.title == "Test Post"
+                assert result.content == "This is a test post"
+                assert result.author == "testuser"
+                assert result.subreddit == "testsub"
 
-            # Verify that get was called once with the JSON URL
-            mock_client_instance.get.assert_called_once_with("https://reddit.com/r/test/comments/123/test.json")
+                # Verify that __get was called once with the JSON URL
+                mock_get.assert_called_once_with("https://reddit.com/r/test/comments/123/test.json")
 
     @pytest.mark.asyncio
     async def test_follows_redirects_for_shared_links(self):
         """Test that shared links (/s/) follow redirects correctly."""
-        with patch("src.reddit.RedditClient") as mock_client:
-            # Mock the redirect response for shared link
-            mock_redirect_response = Mock()
-            mock_redirect_response.url = "https://www.reddit.com/r/test/comments/abc123/test_post/"
+        # Mock the redirect response for shared link
+        mock_redirect_response = Mock()
+        mock_redirect_response.url = "https://www.reddit.com/r/test/comments/abc123/test_post/"
 
-            # Mock the JSON response for the actual post
-            mock_json_response = Mock()
-            mock_json_response.json.return_value = self.mock_json_response_value
-            mock_json_response.raise_for_status.return_value = None
+        # Mock the JSON response for the actual post
+        mock_json_response = Mock()
+        mock_json_response.json.return_value = self.mock_json_response_value
+        mock_json_response.raise_for_status.return_value = None
 
-            # Set up the mock RedditClient instance to return different responses
-            mock_client_instance = AsyncMock()
-            mock_client_instance.get.side_effect = [mock_redirect_response, mock_json_response]
-            mock_client_instance.__aenter__.return_value = mock_client_instance
-            mock_client_instance.__aexit__.return_value = None
+        with patch.object(RedditClient, "__init__", lambda self: None):
+            client = RedditClient()
 
-            mock_client.return_value = mock_client_instance
+            with patch.object(client, "_RedditClient__get", new_callable=AsyncMock) as mock_get:
+                mock_get.side_effect = [mock_redirect_response, mock_json_response]
 
-            # Test with a shared link URL
-            result = await fetch_reddit_post_info("https://reddit.com/r/test/s/abc123")
+                # Test with a shared link URL
+                result = await client.fetch_reddit_post_info("https://reddit.com/r/test/s/abc123")
 
-            # Verify the result
-            assert result is not None
-            assert result.title == "Test Post"
-            assert result.content == "This is a test post"
-            assert result.author == "testuser"
-            assert result.subreddit == "testsub"
+                # Verify the result
+                assert result is not None
+                assert result.title == "Test Post"
+                assert result.content == "This is a test post"
+                assert result.author == "testuser"
+                assert result.subreddit == "testsub"
 
-            # Verify that get was called twice (once for redirect, once for JSON)
-            assert mock_client_instance.get.call_count == 2
-            # First call should be the shared link
-            assert mock_client_instance.get.call_args_list[0][0][0] == "https://reddit.com/r/test/s/abc123"
-            # Second call should be the JSON URL
-            assert (
-                mock_client_instance.get.call_args_list[1][0][0]
-                == "https://www.reddit.com/r/test/comments/abc123/test_post.json"
-            )
+                # Verify that __get was called twice (once for redirect, once for JSON)
+                assert mock_get.call_count == 2
+                # First call should be the shared link
+                assert mock_get.call_args_list[0][0][0] == "https://reddit.com/r/test/s/abc123"
+                # Second call should be the JSON URL
+                assert (
+                    mock_get.call_args_list[1][0][0] == "https://www.reddit.com/r/test/comments/abc123/test_post.json"
+                )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -128,45 +120,39 @@ class TestFetchRedditPostInfo:
     )
     async def test_strips_query_parameters(self, url, expected):
         """Test that URLs with query parameters are handled correctly."""
-        with patch("src.reddit.RedditClient") as mock_client:
-            # Mock the JSON response for the actual post
-            mock_response = Mock()
-            mock_response.json.return_value = self.mock_json_response_value
-            mock_response.raise_for_status.return_value = None
+        # Mock the JSON response for the actual post
+        mock_response = Mock()
+        mock_response.json.return_value = self.mock_json_response_value
+        mock_response.raise_for_status.return_value = None
 
-            # Set up the mock RedditClient instance
-            mock_client_instance = AsyncMock()
-            mock_client_instance.get.return_value = mock_response
-            mock_client_instance.__aenter__.return_value = mock_client_instance
-            mock_client_instance.__aexit__.return_value = None
+        with patch.object(RedditClient, "__init__", lambda self: None):
+            client = RedditClient()
 
-            mock_client.return_value = mock_client_instance
+            with patch.object(client, "_RedditClient__get", new_callable=AsyncMock) as mock_get:
+                mock_get.return_value = mock_response
 
-            # Test with a URL that has query parameters
-            await fetch_reddit_post_info(url)
+                # Test with a URL that has query parameters
+                await client.fetch_reddit_post_info(url)
 
-            # Verify that get was called once for the JSON endpoint
-            mock_client_instance.get.assert_called_once_with(expected)
+                # Verify that __get was called once for the JSON endpoint
+                mock_get.assert_called_once_with(expected)
 
     @pytest.mark.asyncio
     async def test_returns_none_for_empty_response(self):
         """Test that no data in the JSON response returns None."""
-        with patch("src.reddit.RedditClient") as mock_client:
-            # Mock an empty JSON response
-            mock_response = Mock()
-            mock_response.json.return_value = []
-            mock_response.raise_for_status.return_value = None
+        # Mock an empty JSON response
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status.return_value = None
 
-            # Set up the mock RedditClient instance
-            mock_client_instance = AsyncMock()
-            mock_client_instance.get.return_value = mock_response
-            mock_client_instance.__aenter__.return_value = mock_client_instance
-            mock_client_instance.__aexit__.return_value = None
+        with patch.object(RedditClient, "__init__", lambda self: None):
+            client = RedditClient()
 
-            mock_client.return_value = mock_client_instance
+            with patch.object(client, "_RedditClient__get", new_callable=AsyncMock) as mock_get:
+                mock_get.return_value = mock_response
 
-            result = await fetch_reddit_post_info("https://reddit.com/r/test/comments/123/test/")
-            assert result is None
+                result = await client.fetch_reddit_post_info("https://reddit.com/r/test/comments/123/test/")
+                assert result is None
 
 
 class TestFormatRedditPostInfo:
@@ -216,27 +202,22 @@ class TestExtractRedditPostContentFromStr:
         }
         mock_json_response_value = [{"data": {"children": [{"data": mock_post_data}]}}]
 
-        with patch("src.reddit.RedditClient") as mock_client:
-            # Mock the JSON response for the actual post
-            mock_response = Mock()
-            mock_response.json.return_value = mock_json_response_value
-            mock_response.raise_for_status.return_value = None
+        # Mock the JSON response for the actual post
+        mock_response = Mock()
+        mock_response.json.return_value = mock_json_response_value
+        mock_response.raise_for_status.return_value = None
 
-            # Set up the mock RedditClient instance
-            mock_client_instance = AsyncMock()
-            mock_client_instance.get.return_value = mock_response
-            mock_client_instance.__aenter__.return_value = mock_client_instance
-            mock_client_instance.__aexit__.return_value = None
+        with patch.object(RedditClient, "__init__", lambda self: None):
+            client = RedditClient()
 
-            mock_client.return_value = mock_client_instance
+            with patch.object(client, "_RedditClient__get", new_callable=AsyncMock) as mock_get:
+                mock_get.return_value = mock_response
 
-            test_str = (
-                "Check out this Reddit post: https://www.reddit.com/r/testsubreddit/comments/abc123/test_post_title/"
-            )
-            result = await extract_reddit_post_content_from_str(test_str)
+                test_str = "Check out this Reddit post: https://www.reddit.com/r/testsubreddit/comments/abc123/test_post_title/"
+                result = await client.extract_reddit_post_content_from_str(test_str)
 
-            expected = "*Reddit Post from r/testsubreddit by u/testuser*\n\n**Test Post Title**\n\nThis is some test content for the post.\n"
-            assert result == expected
+                expected = "*Reddit Post from r/testsubreddit by u/testuser*\n\n**Test Post Title**\n\nThis is some test content for the post.\n"
+                assert result == expected
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -249,5 +230,8 @@ class TestExtractRedditPostContentFromStr:
     )
     async def test_raises_exception_for_str_without_reddit_url(self, test_str):
         """Test that passing a string without a Reddit URL raises a ValueError."""
-        with pytest.raises(ValueError):
-            await extract_reddit_post_content_from_str(test_str)
+        with patch.object(RedditClient, "__init__", lambda self: None):
+            client = RedditClient()
+
+            with pytest.raises(ValueError):
+                await client.extract_reddit_post_content_from_str(test_str)

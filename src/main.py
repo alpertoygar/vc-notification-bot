@@ -21,7 +21,7 @@ from util import (
 )
 
 from reddit import (
-    extract_reddit_post_content_from_str,
+    RedditClient,
     is_str_with_reddit_url,
 )
 
@@ -38,6 +38,8 @@ discord_client.tree = app_commands.CommandTree(discord_client)
 
 gpt_conversation_client = GPTClient(base_model=config.get_gpt_model_base())
 gpt_code_client = GPTClient(base_model=config.get_gpt_model_code())
+
+reddit_client = RedditClient()
 
 
 @discord_client.event
@@ -65,7 +67,7 @@ async def on_message(message: Message):
 
     if config.is_reddit_user(message.author.id) and is_str_with_reddit_url(message.content):
         try:
-            formatted_message = await extract_reddit_post_content_from_str(message.content)
+            formatted_message = await reddit_client.extract_reddit_post_content_from_str(message.content)
             await message.channel.send(formatted_message, reference=message)
         except Exception as e:
             print(f"Error processing Reddit URL: {e}")
